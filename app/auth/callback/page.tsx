@@ -1,0 +1,134 @@
+'use client';
+
+import { useEffect, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { supabase } from '@/lib/supabase';
+import { Loader2, CheckCircle, XCircle } from 'lucide-react';
+
+export default function AuthCallbackPage() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
+  const [message, setMessage] = useState('');
+
+  useEffect(() => {
+    const handleAuthCallback = async () => {
+      try {
+        const code = searchParams.get('code');
+        const type = searchParams.get('type');
+        const error = searchParams.get('error');
+        const errorDescription = searchParams.get('error_description');
+
+        // Check for errors in URL
+        if (error) {
+          setStatus('error');
+          setMessage(errorDescription || 'Authentication failed');
+          return;
+        }
+
+        if (code) {
+          // Exchange code for session
+          const { data, error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
+          
+          if (exchangeError) {
+            setStatus('error');
+            setMessage(exchangeError.message);
+            return;
+          }
+
+          if (data.user) {
+            setStatus('success');
+            
+            if (type === 'recovery') {
+              setMessage('Password reset successful! You can now update your password.');
+              // Redirect to password update page
+              setTimeout(() => router.push('/new-password'), 2000);
+            } else {
+              setMessage('Email verified successfully! You can now sign in.');
+              // Redirect to login or dashboard
+              setTimeout(() => router.push('/'), 2000);
+            }
+          }
+        } else {
+          // No code found, redirect to login
+          setStatus('error');
+          setMessage('No authentication code found');
+        }
+      } catch (error: any) {
+        console.error('Auth callback error:', error);
+        setStatus('error');
+        setMessage(error.message || 'Authentication failed');
+      }
+    };
+
+    handleAuthCallback();
+  }, [searchParams, router]);
+
+  // Auto redirect on error after 3 seconds
+  useEffect(() => {
+    if (status === 'error') {
+      const timer = setTimeout(() => {
+        router.push('/login');
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [status, router]);
+
+  return (
+    <main className="min-h-screen bg-[#f2f0ed] flex items-center justify-center p-4">
+      <div className="w-full max-w-md">
+        <div className="bg-white rounded-2xl shadow-lg p-8 text-center">
+          {status === 'loading' && (
+            <>
+              <div className="w-12 h-12 rounded-full bg-gradient-to-br from-[#d96857] to-[#c45745] flex items-center justify-center mb-4 mx-auto">
+                <Loader2 className="w-6 h-6 text-white animate-spin" />
+              </div>
+              <h1 className="text-xl font-semibold text-[#2e2e2e] mb-2">
+                Verifying...
+              </h1>
+              <p className="text-[#2e2e2e]/70">
+                Please wait while we verify your authentication.
+              </p>
+            </>
+          )}
+
+          {status === 'success' && (
+            <>
+              <div className="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center mb-4 mx-auto">
+                <CheckCircle className="w-6 h-6 text-green-600" />
+              </div>
+              <h1 className="text-xl font-semibold text-[#2e2e2e] mb-2">
+                Success!
+              </h1>
+              <p className="text-[#2e2e2e]/70 mb-4">
+                {message}
+              </p>
+              <div className="flex items-center justify-center gap-2 text-sm text-[#2e2e2e]/50">
+                <Loader2 className="w-4 h-4 animate-spin" />
+                Redirecting...
+              </div>
+            </>
+          )}
+
+          {status === 'error' && (
+            <>
+              <div className="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center mb-4 mx-auto">
+                <XCircle className="w-6 h-6 text-red-600" />
+              </div>
+              <h1 className="text-xl font-semibold text-[#2e2e2e] mb-2">
+                Authentication Failed
+              </h1>
+              <p className="text-[#2e2e2e]/70 mb-4">
+                {message}
+              </p>
+              <div className="flex items-center justify-center gap-2 text-sm text-[#2e2e2e]/50">
+                <Loader2 className="w-4 h-4 animate-spin" />
+                Redirecting to login...
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+    </main>
+  );
+}

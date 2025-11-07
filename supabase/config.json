@@ -1,0 +1,61 @@
+{
+  "name": "design-n-cart",
+  "config": {
+    "db_schema": "public",
+    "db_extra_security": true
+  },
+  "api": {
+    "auth": {
+      "enabled": true,
+      "site_url": "http://localhost:3000",
+      "additional_redirect_urls": [
+        "https://designncart.vercel.app"
+      ],
+      "autoconfirm": false,
+      "mailer_templates": {
+        "invite": {
+          "subject": "Welcome to Design n Cart",
+          "content_path": "templates/invite.html"
+        },
+        "magic_link": {
+          "subject": "Your Magic Link",
+          "content_path": "templates/magic-link.html"
+        },
+        "recovery": {
+          "subject": "Reset Your Password",
+          "content_path": "templates/recovery.html"
+        },
+        "email_change": {
+          "subject": "Confirm Email Change",
+          "content_path": "templates/email-change.html"
+        }
+      }
+    },
+    "storage": {
+      "enabled": true,
+      "buckets": [
+        {
+          "name": "files",
+          "public": true,
+          "file_size_limit": "50MB",
+          "allowed_mime_types": [
+            "image/*",
+            "application/pdf",
+            "application/msword",
+            "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            "application/vnd.ms-excel",
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            "text/plain",
+            "application/zip"
+          ]
+        },
+        {
+          "name": "avatars",
+          "public": true,
+          "file_size_limit": "5MB",
+          "allowed_mime_types": ["image/*"]
+        }
+      ]
+    }
+  }
+}
