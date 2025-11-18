@@ -69,7 +69,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (localDemoMode !== null) {
           isDemoMode = localDemoMode === 'true';
         }
-
+        
         // However, if DEMO_MODE is false in config, force real mode
         if (!DEMO_MODE) {
           isDemoMode = false;
@@ -88,9 +88,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         } else {
           // Real mode - check Supabase auth
           const { data: { session }, error } = await supabase.auth.getSession();
-          
           if (error) {
-            console.error('Error getting session:', error);
+            console.error('Auth check failed:', error);
           } else if (session?.user) {
             setUser(session.user);
           }
@@ -121,59 +120,61 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const signIn = async (email: string, password: string) => {
-    // Check for demo credentials first, regardless of current mode
-    if (email === 'demo@designandcart.in' && password === 'demo123') {
-      setUser(DEMO_USER);
-      localStorage.setItem(DEMO_USER_KEY, JSON.stringify(DEMO_USER));
-      return;
-    }
-
-    // If not demo credentials and we're in demo mode, reject
     if (isDemo) {
-      throw new Error('Please use demo credentials: demo@designandcart.in / demo123');
-    }
+      // Demo sign in - only accept specific demo credentials
+      if (email === 'demo@designandcart.in' && password === 'demo123') {
+        setUser(DEMO_USER);
+        localStorage.setItem(DEMO_USER_KEY, JSON.stringify(DEMO_USER));
+      } else {
+        throw new Error('Please use demo credentials: demo@designandcart.in / demo123');
+      }
+    } else {
+      // Real Supabase sign in
+      setIsLoading(true);
+      try {
+        const { data, error } = await supabase.auth.signInWithPassword({
+          email: email.toLowerCase().trim(),
+          password
+        });
 
-    // Real Supabase sign in
-    setIsLoading(true);
-    try {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email: email.toLowerCase().trim(),
-        password
-      });
-
-      if (error) {
-        console.error('Supabase auth error:', error);
-        
-        // Provide specific error messages
-        if (error.message.includes('Invalid login credentials')) {
-          throw new Error('Invalid email or password. Please check your credentials and try again.');
-        } else if (error.message.includes('Email not confirmed')) {
-          throw new Error('Please verify your email address before signing in. Check your inbox for the verification link.');
-        } else if (error.message.includes('email_confirmed_at')) {
-          throw new Error('Please verify your email address before signing in. Check your inbox for the verification link.');
-        } else {
-          throw new Error(error.message || 'Failed to sign in');
+        if (error) {
+          console.error('Supabase auth error:', error);
+          
+          // Provide specific error messages
+          if (error.message.includes('Invalid login credentials')) {
+            throw new Error('Invalid email or password. Please check your credentials and try again.');
+          } else if (error.message.includes('Email not confirmed')) {
+            throw new Error('Please verify your email address before signing in. Check your inbox for the verification link.');
+          } else if (error.message.includes('email_confirmed_at')) {
+            throw new Error('Please verify your email address before signing in. Check your inbox for the verification link.');
+          } else {
+            throw new Error(error.message || 'Failed to sign in');
+          }
         }
-      }
 
-      // Check if email is confirmed
-      if (data.user && !data.user.email_confirmed_at) {
-        throw new Error('Please verify your email address before signing in. Check your inbox for the verification link.');
-      }
+        // Check if email is confirmed
+        if (data.user && !data.user.email_confirmed_at) {
+          throw new Error('Please verify your email address before signing in. Check your inbox for the verification link.');
+        }
 
-      setUser(data.user);
-    } catch (error) {
-      throw error;
-    } finally {
-      setIsLoading(false);
+        if (data.user) {
+          setUser(data.user);
+        }
+      } catch (error: any) {
+        throw error; // Re-throw to preserve the specific error message
+      } finally {
+        setIsLoading(false);
+      }
     }
   };
 
   const signUp = async (email: string, name: string, password: string) => {
     if (isDemo) {
-      throw new Error('Sign up is not available in demo mode. Please use the demo account.');
+      // Demo sign up - redirect to specific demo credentials
+      throw new Error('In demo mode, please use the sign in page with: demo@designandcart.in / demo123');
     }
 
+    // Real Supabase sign up
     setIsLoading(true);
     try {
       const { data, error } = await supabase.auth.signUp({
@@ -181,30 +182,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         password,
         options: {
           data: {
-            full_name: name.trim(),
+            name: name.trim()
           },
-        },
+          emailRedirectTo: `${window.location.origin}/auth/callback`
+        }
       });
 
       if (error) {
-        console.error('Supabase signup error:', error);
-        
-        if (error.message.includes('User already registered')) {
-          throw new Error('This email is already registered. Please sign in instead or use password reset if you forgot your password.');
-        } else if (error.message.includes('Password should be')) {
-          throw new Error('Password should be at least 6 characters long.');
-        } else {
-          throw new Error(error.message || 'Failed to create account');
-        }
+        throw error;
       }
 
-      if (data.user && !data.user.email_confirmed_at) {
-        throw new Error('Please check your email and click the verification link before signing in.');
+      // Note: User will need to verify email before they can sign in
+      if (data.user && !data.session) {
+        // Email verification required
+        return;
       }
 
-      // Don't set user yet - they need to verify email
-    } catch (error) {
-      throw error;
+    } catch (error: any) {
+      throw new Error(error.message || 'Failed to create account');
     } finally {
       setIsLoading(false);
     }
@@ -212,35 +207,42 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signOut = async () => {
     if (isDemo) {
+      // Demo sign out
       setUser(null);
       localStorage.removeItem(DEMO_USER_KEY);
     } else {
+      // Real Supabase sign out
       setIsLoading(true);
       try {
         const { error } = await supabase.auth.signOut();
         if (error) {
-          console.error('Error signing out:', error);
+          throw error;
         }
         setUser(null);
-      } catch (error) {
-        console.error('Sign out failed:', error);
+      } catch (error: any) {
+        console.error('Sign out error:', error);
       } finally {
         setIsLoading(false);
       }
     }
+    
     router.push('/');
   };
 
   const resetPassword = async (email: string) => {
     if (isDemo) {
-      throw new Error('Password reset is not available in demo mode.');
+      throw new Error('Password reset not available in demo mode');
     }
 
-    const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/new-password`,
-    });
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/auth/callback?type=recovery`
+      });
 
-    if (error) {
+      if (error) {
+        throw error;
+      }
+    } catch (error: any) {
       throw new Error(error.message || 'Failed to send reset email');
     }
   };

@@ -1,65 +1,16 @@
 'use client';
 
 import Link from 'next/link';
-import { Heart, ShoppingCart, Plus } from 'lucide-react';
+import { Heart } from 'lucide-react';
 import type { DemoProduct } from '@/lib/types';
 import { useState } from 'react';
-import { useAuth } from '@/lib/auth/authContext';
 
 interface ProductCardProps {
   product: DemoProduct;
 }
 
 export default function ProductCard({ product }: ProductCardProps) {
-  const { isDemo, user } = useAuth();
   const [isHovered, setIsHovered] = useState(false);
-  const [isAdding, setIsAdding] = useState(false);
-
-  const addToCart = async (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    
-    if (!user) return;
-    
-    setIsAdding(true);
-    
-    try {
-      // Get user's cart
-      const cartKey = isDemo ? 'dc:cart' : `dc:cart:${user.id}`;
-      const existingCart = localStorage.getItem(cartKey);
-      const cart = existingCart ? JSON.parse(existingCart) : [];
-      
-      // Check if product already in cart
-      const existingItem = cart.find((item: any) => item.productId === product.id);
-      
-      if (existingItem) {
-        // Increase quantity
-        existingItem.qty += 1;
-      } else {
-        // Add new item
-        const newItem = {
-          id: `cart_${Date.now()}_${product.id}`,
-          productId: product.id,
-          qty: 1,
-          projectId: undefined,
-          area: undefined,
-        };
-        cart.push(newItem);
-      }
-      
-      // Save updated cart
-      localStorage.setItem(cartKey, JSON.stringify(cart));
-      
-      // Show feedback (you could use a toast notification here)
-      setTimeout(() => {
-        setIsAdding(false);
-      }, 500);
-      
-    } catch (error) {
-      console.error('Error adding to cart:', error);
-      setIsAdding(false);
-    }
-  };
 
   return (
     <Link
@@ -88,7 +39,7 @@ export default function ProductCard({ product }: ProductCardProps) {
 
         {/* Quick Actions */}
         <div
-          className={`absolute top-3 right-3 transition-all duration-200 transform flex flex-col gap-2
+          className={`absolute top-3 right-3 transition-all duration-200 transform
             ${isHovered ? 'translate-y-0 opacity-100' : 'translate-y-2 opacity-0'}`}
         >
           <button
@@ -100,21 +51,6 @@ export default function ProductCard({ product }: ProductCardProps) {
             }}
           >
             <Heart className="w-5 h-5" />
-          </button>
-          
-          <button
-            className={`w-9 h-9 rounded-full bg-white/95 shadow-lg flex items-center justify-center
-              hover:bg-[#d96857] hover:text-white transition-colors ${
-                isAdding ? 'bg-green-500 text-white' : ''
-              }`}
-            onClick={addToCart}
-            disabled={isAdding}
-          >
-            {isAdding ? (
-              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-            ) : (
-              <ShoppingCart className="w-5 h-5" />
-            )}
           </button>
         </div>
       </div>
@@ -155,29 +91,6 @@ export default function ProductCard({ product }: ProductCardProps) {
               </div>
             )}
           </div>
-
-          {/* Add to Cart Button */}
-          <button
-            className={`w-full mt-3 py-2 px-4 rounded-2xl text-sm font-medium transition-all duration-200 ${
-              isAdding 
-                ? 'bg-green-500 text-white' 
-                : 'bg-[#d96857] hover:bg-[#c85745] text-white'
-            }`}
-            onClick={addToCart}
-            disabled={isAdding}
-          >
-            {isAdding ? (
-              <div className="flex items-center justify-center gap-2">
-                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                Adding...
-              </div>
-            ) : (
-              <div className="flex items-center justify-center gap-2">
-                <Plus className="w-4 h-4" />
-                Add to Cart
-              </div>
-            )}
-          </button>
         </div>
       </div>
     </Link>

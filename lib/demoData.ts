@@ -26,6 +26,8 @@ export type DemoProject = {
   address?: string;
   notes?: string;
   area?: string;
+  // Optional list of areas (newer format). Use either `area` (legacy single) or `areas`.
+  areas?: string[];
   status?: string;
   uploads?: DemoUpload[];
   createdAt: number; // auto-captured
@@ -81,6 +83,7 @@ export const demoProjects: DemoProject[] = [
     scope: "2BHK",
     address: "12, 5th Cross, Koramangala, Bengaluru",
     area: "Living Room",
+    areas: ["Living Room", "Kitchen", "Bedroom"],
     status: "wip",
     uploads: [],
     createdAt: Date.now() - 1000 * 60 * 60 * 24 * 4, // 4 days ago
@@ -91,6 +94,7 @@ export const demoProjects: DemoProject[] = [
     scope: "Commercial",
     address: "Plot 27, Palm Meadows, Whitefield, Bengaluru",
     area: "Dining",
+    areas: ["Dining", "Living Room"],
     status: "renders_shared",
     uploads: [],
     createdAt: Date.now() - 1000 * 60 * 60 * 24 * 2, // 2 days ago
@@ -101,6 +105,7 @@ export const demoProjects: DemoProject[] = [
     scope: "3BHK",
     address: "45, 8th Main, Indiranagar, Bengaluru",
     area: "Master Bedroom",
+    areas: ["Master Bedroom"],
     status: "approved",
     uploads: [],
     createdAt: Date.now() - 1000 * 60 * 60 * 24 * 7, // 7 days ago
@@ -111,6 +116,7 @@ export const demoProjects: DemoProject[] = [
     scope: "Commercial",
     address: "Tech Park, HSR Layout, Bengaluru",
     area: "Reception",
+    areas: ["Reception"],
     status: "delivering",
     uploads: [],
     createdAt: Date.now() - 1000 * 60 * 60 * 24 * 1, // 1 day ago
@@ -121,6 +127,7 @@ export const demoProjects: DemoProject[] = [
     scope: "1BHK",
     address: "33, 4th Phase, JP Nagar, Bengaluru",
     area: "Living Room",
+    areas: ["Living Room"],
     status: "screenshots_shared",
     uploads: [],
     createdAt: Date.now() - 1000 * 60 * 60 * 24 * 3, // 3 days ago

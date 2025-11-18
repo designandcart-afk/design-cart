@@ -1,25 +1,67 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { useParams } from "next/navigation";
-import { demoProductsAll, demoProjects } from "@/lib/demoData";
+import { useMemo, useState, useEffect } from "react";
+import { useParams, useRouter } from "next/navigation";
+import { demoProductsAll } from "@/lib/demoData";
 import { Button, Select, Card, Badge } from "@/components/UI";
 import { useAuth } from "@/lib/auth/authContext";
+import { useProjects } from "@/lib/contexts/projectsContext";
+import { ArrowLeft } from "lucide-react";
 
 export default function ProductDetailPage() {
   const { id } = useParams();
+  const router = useRouter();
   const product = useMemo(
     () => demoProductsAll.find((p) => p.id === id),
     [id]
   );
 
   const { user } = useAuth();
+  const { projects } = useProjects();
   const isLoggedIn = !!user;
   const authEmail = user?.email || null;
 
-  const [projectId, setProjectId] = useState(demoProjects[0]?.id ?? "");
-  const [area, setArea] = useState("Living Room");
+  // Filter to only show user's own projects (not demo projects)
+  const userProjects = useMemo(() => {
+    return projects.filter(p => !p.id.startsWith('demo_'));
+  }, [projects]);
+
+  const [projectId, setProjectId] = useState("");
+  const [area, setArea] = useState("");
   const [note, setNote] = useState("");
+
+  // Set initial project when userProjects load
+  useEffect(() => {
+    if (userProjects.length > 0 && !projectId) {
+      setProjectId(userProjects[0].id);
+    }
+  }, [userProjects, projectId]);
+
+  // Get areas for the selected project
+  const selectedProject = useMemo(() => {
+    return userProjects.find(p => p.id === projectId);
+  }, [userProjects, projectId]);
+
+  const availableAreas = useMemo(() => {
+    // Support both new `areas` array and legacy `area` string
+    if (selectedProject?.areas && selectedProject.areas.length > 0) {
+      return selectedProject.areas;
+    }
+    // Fallback to legacy single area field
+    if (selectedProject?.area) {
+      return [selectedProject.area];
+    }
+    return [];
+  }, [selectedProject]);
+
+  // Set initial area when project changes
+  useEffect(() => {
+    if (availableAreas.length > 0) {
+      setArea(availableAreas[0]);
+    } else {
+      setArea("");
+    }
+  }, [availableAreas]);
 
   if (!product) {
     return (
@@ -27,7 +69,7 @@ export default function ProductDetailPage() {
     );
   }
 
-  // Store “Add to Design” links in localStorage (so we don’t mutate your demoData.ts)
+  // Store "Add to Design" links in localStorage (so we don't mutate your demoData.ts)
   function addLinkToLocal(projectId: string, productId: string, area: string, note?: string) {
     const key = "dc:projectProducts";
     const list = JSON.parse(localStorage.getItem(key) || "[]");
@@ -41,18 +83,32 @@ export default function ProductDetailPage() {
     };
     list.push(entry);
     localStorage.setItem(key, JSON.stringify(list));
+    
+    // Dispatch custom event to notify other components
+    window.dispatchEvent(new CustomEvent('projectProductsUpdated'));
   }
 
   function handleAddToDesign() {
-    if (!projectId) return alert("Choose a project.");
+    if (!projectId) return alert("Please choose a project.");
+    if (!area) return alert("Please select an area. Add areas to your project if needed.");
+    const projectName = selectedProject?.name || projectId;
     addLinkToLocal(projectId, product.id, area, note);
-    alert(`Added "${product.title}" to ${projectId} (${area}).`);
+    alert(`Added "${product.title}" to ${projectName} (${area}).`);
     setNote("");
   }
 
   return (
     <main className="min-h-screen bg-[#efeee9]">
       <div className="max-w-7xl mx-auto px-4 py-8">
+        {/* Back Button */}
+        <button
+          onClick={() => router.push('/products')}
+          className="mb-6 flex items-center gap-2 text-[#2e2e2e] hover:text-[#d96857] transition-colors group"
+        >
+          <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
+          <span className="font-medium">Back to Products</span>
+        </button>
+
         {/* Product Card */}
         <Card className="overflow-hidden shadow-lg">
           <div className="grid md:grid-cols-2 gap-8 p-8">
@@ -112,40 +168,78 @@ export default function ProductDetailPage() {
               {/* Designer Actions */}
               {isLoggedIn ? (
                 <div className="space-y-4 border-t border-[#2e2e2e]/10 pt-6">
-                  <Select
-                    value={projectId}
-                    onChange={(e) => setProjectId(e.target.value)}
-                  >
-                    {demoProjects.map((pj) => (
-                      <option key={pj.id} value={pj.id}>
-                        {pj.name}
-                      </option>
-                    ))}
-                  </Select>
+                  {userProjects.length === 0 ? (
+                    <div className="text-center py-4 text-[#2e2e2e]/60">
+                      <p className="mb-3">No projects yet. Create a project first to add products.</p>
+                      <Button
+                        onClick={() => {
+                          window.location.href = '/';
+                        }}
+                        className="w-full"
+                      >
+                        Go to Dashboard
+                      </Button>
+                    </div>
+                  ) : (
+                    <>
+                      <div>
+                        <label className="block text-sm font-medium text-[#2e2e2e] mb-2">
+                          Select Project
+                        </label>
+                        <Select
+                          value={projectId}
+                          onChange={(e) => setProjectId(e.target.value)}
+                        >
+                          {userProjects.map((pj) => (
+                            <option key={pj.id} value={pj.id}>
+                              {pj.name}
+                            </option>
+                          ))}
+                        </Select>
+                      </div>
 
-                  <Select
-                    value={area}
-                    onChange={(e) => setArea(e.target.value)}
-                  >
-                    <option>Living Room</option>
-                    <option>Dining</option>
-                    <option>Bedroom</option>
-                    <option>Kitchen</option>
-                  </Select>
+                      <div>
+                        <label className="block text-sm font-medium text-[#2e2e2e] mb-2">
+                          Select Area
+                        </label>
+                        {availableAreas.length === 0 ? (
+                          <div className="text-sm text-[#2e2e2e]/60 p-3 bg-[#f9f8f7] border border-[#2e2e2e]/10 rounded-xl">
+                            No areas in this project. Add areas from the project page.
+                          </div>
+                        ) : (
+                          <Select
+                            value={area}
+                            onChange={(e) => setArea(e.target.value)}
+                          >
+                            {availableAreas.map((ar) => (
+                              <option key={ar} value={ar}>
+                                {ar}
+                              </option>
+                            ))}
+                          </Select>
+                        )}
+                      </div>
+                    </>
+                  )}
 
-                  <textarea
-                    placeholder="Add a note (optional)"
-                    value={note}
-                    onChange={(e) => setNote(e.target.value)}
-                    className="w-full min-h-[100px] resize-none border border-[#2e2e2e]/10 rounded-xl p-3 bg-[#f9f8f7] text-[#2e2e2e] placeholder:text-[#2e2e2e]/40 focus:outline-none focus:ring-2 focus:ring-[#d96857]/30"
-                  />
+                  {userProjects.length > 0 && (
+                    <>
+                      <textarea
+                        placeholder="Add a note (optional)"
+                        value={note}
+                        onChange={(e) => setNote(e.target.value)}
+                        className="w-full min-h-[100px] resize-none border border-[#2e2e2e]/10 rounded-xl p-3 bg-[#f9f8f7] text-[#2e2e2e] placeholder:text-[#2e2e2e]/40 focus:outline-none focus:ring-2 focus:ring-[#d96857]/30"
+                      />
 
-                  <Button
-                    onClick={handleAddToDesign}
-                    className="w-full"
-                  >
-                    Add to Design
-                  </Button>
+                      <Button
+                        onClick={handleAddToDesign}
+                        className="w-full"
+                        disabled={!projectId || !area || availableAreas.length === 0}
+                      >
+                        Add to Design
+                      </Button>
+                    </>
+                  )}
 
                   <p className="text-sm text-[#2e2e2e]/60 text-center">
                     Logged in as{" "}

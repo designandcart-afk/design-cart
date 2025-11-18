@@ -3,8 +3,9 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { demoProductsAll, demoProjects, demoCart } from "@/lib/demoData";
-import { useAuth } from "@/lib/auth/authContext";
 import { Button } from "@/components/UI";
+import { useProjects } from "@/lib/contexts/projectsContext";
+import { ChevronDown, ChevronRight } from "lucide-react";
 
 type CartLine = {
   id: string;
@@ -18,47 +19,47 @@ const CART_KEY = "dc:cart";
 const ORDERS_KEY = "dc:orders";
 
 export default function CartPage() {
-  const { isDemo, user } = useAuth();
+  const { projects } = useProjects();
+  
   function toggleSelect(id: string){ setSelectedIds(prev => prev.includes(id) ? prev.filter(x=>x!==id) : [...prev, id]); }
+  function toggleProject(projectId: string) {
+    const projectItems = lines.filter(l => l.projectId === projectId).map(l => l.id);
+    const allSelected = projectItems.every(id => selectedIds.includes(id));
+    if (allSelected) {
+      setSelectedIds(prev => prev.filter(id => !projectItems.includes(id)));
+    } else {
+      setSelectedIds(prev => [...new Set([...prev, ...projectItems])]);
+    }
+  }
+  
   const [lines, setLines] = useState<CartLine[]>([]);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
+  const [collapsedProjects, setCollapsedProjects] = useState<Set<string>>(new Set());
 
-  // ✅ Load cart data based on user type
+  // ✅ Load demo data or localStorage
   useEffect(() => {
-    if (isDemo) {
-      // Demo mode - use demo cart
-      const existing = localStorage.getItem(CART_KEY);
-      let loadedLines: CartLine[] = [];
-      
-      if (!existing || existing === "[]") {
-        // preload demo cart only if empty
-        localStorage.setItem(CART_KEY, JSON.stringify(demoCart));
-        loadedLines = demoCart;
-      } else {
-        loadedLines = JSON.parse(existing);
-      }
-      
-      setLines(loadedLines);
-      setSelectedIds(loadedLines.map((l: CartLine) => l.id));
-    } else if (user) {
-      // Real user mode - use user-specific cart (starts empty)
-      const userCartKey = `dc:cart:${user.id}`;
-      const existing = localStorage.getItem(userCartKey);
-      const loadedLines = existing ? JSON.parse(existing) : [];
-      
-      setLines(loadedLines);
-      setSelectedIds(loadedLines.map((l: CartLine) => l.id));
+    const existing = localStorage.getItem(CART_KEY);
+    let loadedLines: CartLine[] = [];
+    
+    if (!existing || existing === "[]") {
+      // preload demo cart only if empty
+      localStorage.setItem(CART_KEY, JSON.stringify(demoCart));
+      loadedLines = demoCart;
+    } else {
+      loadedLines = JSON.parse(existing);
     }
     
+    setLines(loadedLines);
+    // Initialize all items as selected
+    setSelectedIds(loadedLines.map((l: CartLine) => l.id));
     setLoading(false);
-  }, [isDemo, user]);
+  }, []);
 
   // helpers
   function save(next: CartLine[]) {
     setLines(next);
-    const storageKey = isDemo ? CART_KEY : `dc:cart:${user?.id || 'user'}`;
-    localStorage.setItem(storageKey, JSON.stringify(next));
+    localStorage.setItem(CART_KEY, JSON.stringify(next));
   }
 
   function remove(lineId: string) {
@@ -80,12 +81,32 @@ export default function CartPage() {
   const view = useMemo(() => {
     return lines.map((l) => {
       const product = demoProductsAll.find((p) => p.id === l.productId);
+      // Try to find project from context first, then fallback to demo projects
       const project = l.projectId
-        ? demoProjects.find((p) => p.id === l.projectId)
+        ? (projects.find((p) => p.id === l.projectId) || demoProjects.find((p) => p.id === l.projectId))
         : undefined;
       return { line: l, product, project };
     });
-  }, [lines]);
+  }, [lines, projects]);
+
+  // Group items by project
+  const groupedByProject = useMemo(() => {
+    const groups: Record<string, typeof view> = {};
+    const noProject: typeof view = [];
+    
+    view.forEach((item) => {
+      if (item.line.projectId) {
+        if (!groups[item.line.projectId]) {
+          groups[item.line.projectId] = [];
+        }
+        groups[item.line.projectId].push(item);
+      } else {
+        noProject.push(item);
+      }
+    });
+    
+    return { groups, noProject };
+  }, [view]);
 
   const subtotal = useMemo(() => {
     return view.reduce((sum, row) => {
@@ -99,8 +120,7 @@ export default function CartPage() {
   // ✅ Place Order
   function placeOrder() {
     if (selectedIds.length === 0) return;
-    const ordersKey = isDemo ? ORDERS_KEY : `dc:orders:${user?.id || 'user'}`;
-    const orders = JSON.parse(localStorage.getItem(ordersKey) || "[]");
+    const orders = JSON.parse(localStorage.getItem(ORDERS_KEY) || "[]");
     // Only include selected items in the order
     const selectedItems = lines.filter(l => selectedIds.includes(l.id));
     const order = {
@@ -110,7 +130,7 @@ export default function CartPage() {
       status: "Placed",
       ts: Date.now(),
     };
-    localStorage.setItem(ordersKey, JSON.stringify([order, ...orders]));
+    localStorage.setItem(ORDERS_KEY, JSON.stringify([order, ...orders]));
     // Remove selected items from cart
     save(lines.filter(l => !selectedIds.includes(l.id)));
     // Clear selection
@@ -134,14 +154,85 @@ export default function CartPage() {
           <EmptyState />
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Products list */}
-            <section className="lg:col-span-2 space-y-3">
-              {view.map(({ line, product, project }) => (
-                <div
-                  key={line.id}
-                  className="rounded-2xl border border-zinc-200 bg-white p-3 shadow-sm hover:shadow-md transition"
-                >
-                  <div className="flex gap-3"><input type="checkbox" className="mt-2" checked={selectedIds.includes(line.id)} onChange={()=>toggleSelect(line.id)} />
+            {/* Products list grouped by project */}
+            <section className="lg:col-span-2 space-y-5">
+              {/* Grouped by Projects */}
+              {Object.entries(groupedByProject.groups).map(([projectId, items]) => {
+                const project = items[0]?.project;
+                const projectItemIds = items.map(i => i.line.id);
+                const allSelected = projectItemIds.every(id => selectedIds.includes(id));
+                const someSelected = projectItemIds.some(id => selectedIds.includes(id)) && !allSelected;
+                const isCollapsed = collapsedProjects.has(projectId);
+                const projectTotal = items.reduce((sum, item) => {
+                  if (!selectedIds.includes(item.line.id)) return sum;
+                  return sum + (item.product?.price || 0) * item.line.qty;
+                }, 0);
+
+                return (
+                  <div key={projectId} className="border-2 border-zinc-200 rounded-2xl overflow-hidden bg-white shadow-sm">
+                    {/* Project Header */}
+                    <div className="bg-gradient-to-r from-[#f2f0ed] to-white p-4 border-b border-zinc-200">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <input
+                            type="checkbox"
+                            checked={allSelected}
+                            ref={(el) => {
+                              if (el) el.indeterminate = someSelected;
+                            }}
+                            onChange={() => toggleProject(projectId)}
+                            className="w-4 h-4"
+                          />
+                          <button
+                            onClick={() => setCollapsedProjects(prev => {
+                              const next = new Set(prev);
+                              if (next.has(projectId)) {
+                                next.delete(projectId);
+                              } else {
+                                next.add(projectId);
+                              }
+                              return next;
+                            })}
+                            className="flex items-center gap-2 hover:text-[#d96857] transition-colors"
+                          >
+                            {isCollapsed ? (
+                              <ChevronRight className="w-5 h-5" />
+                            ) : (
+                              <ChevronDown className="w-5 h-5" />
+                            )}
+                            <div className="text-left">
+                              <div className="font-semibold text-[#2e2e2e]">
+                                {project?.name || 'Unknown Project'}
+                              </div>
+                              {project?.address && (
+                                <div className="text-xs text-zinc-600 mt-0.5">
+                                  {project.address}
+                                </div>
+                              )}
+                            </div>
+                          </button>
+                        </div>
+                        <div className="text-right">
+                          <div className="text-xs text-zinc-500">{items.length} item{items.length > 1 ? 's' : ''}</div>
+                          {projectTotal > 0 && (
+                            <div className="text-sm font-semibold text-[#d96857]">
+                              ₹{projectTotal.toLocaleString("en-IN")}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Project Items */}
+                    {!isCollapsed && (
+                      <div className="divide-y divide-zinc-100">
+                        {items.map(({ line, product, project }) => (
+                          <div
+                            key={line.id}
+                            className="p-3 hover:bg-zinc-50 transition"
+                          >
+                            <div className="flex gap-3">
+                              <input type="checkbox" className="mt-2" checked={selectedIds.includes(line.id)} onChange={()=>toggleSelect(line.id)} />
                     <img
                       src={product?.imageUrl}
                       alt={product?.title}
@@ -173,51 +264,125 @@ export default function CartPage() {
                             </div>
                           )}
 
-                          {/* Area Tag */}
-                          {line.area && (
-                            <div className="mt-2">
-                              <span className="inline-block bg-[#f2f0ed] border border-zinc-200 rounded-2xl px-2 py-1 text-xs text-[#2e2e2e]">
-                                Area: {line.area}
-                              </span>
+                              {/* Area Tag */}
+                              {line.area && (
+                                <div className="mt-2">
+                                  <span className="inline-block bg-[#f2f0ed] border border-zinc-200 rounded-2xl px-2 py-1 text-xs text-[#2e2e2e]">
+                                    Area: {line.area}
+                                  </span>
+                                </div>
+                              )}
                             </div>
-                          )}
-                        </div>
-                        <div className={`text-sm font-semibold ${selectedIds.includes(line.id) ? "text-[#2e2e2e]" : "text-zinc-400 line-through"}`}>
-                          ₹{((product?.price || 0) * line.qty).toLocaleString("en-IN")}
-                        </div>
-                      </div>
+                            <div className={`text-sm font-semibold ${selectedIds.includes(line.id) ? "text-[#2e2e2e]" : "text-zinc-400 line-through"}`}>
+                              ₹{((product?.price || 0) * line.qty).toLocaleString("en-IN")}
+                            </div>
+                          </div>
 
-                      {/* Quantity / Remove */}
-                      <div className="mt-3 flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <button
-                            onClick={() => changeQty(line.id, -1)}
-                            className="rounded-2xl border border-zinc-300 bg-white px-3 py-1.5 text-sm"
-                          >
-                            −
-                          </button>
-                          <div className="w-8 text-center text-sm">{line.qty}</div>
-                          <button
-                            onClick={() => changeQty(line.id, +1)}
-                            className="rounded-2xl border border-zinc-300 bg-white px-3 py-1.5 text-sm"
-                          >
-                            +
-                          </button>
-                        </div>
+                          {/* Quantity / Remove */}
+                          <div className="mt-3 flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <button
+                                onClick={() => changeQty(line.id, -1)}
+                                className="rounded-2xl border border-zinc-300 bg-white px-3 py-1.5 text-sm hover:bg-zinc-50"
+                              >
+                                −
+                              </button>
+                              <div className="w-8 text-center text-sm">{line.qty}</div>
+                              <button
+                                onClick={() => changeQty(line.id, +1)}
+                                className="rounded-2xl border border-zinc-300 bg-white px-3 py-1.5 text-sm hover:bg-zinc-50"
+                              >
+                                +
+                              </button>
+                            </div>
 
-                        <button
-                          onClick={() => remove(line.id)}
-                          className="text-xs text-zinc-600 hover:text-[#d96857]"
-                        >
-                          Remove
-                        </button>
+                            <button
+                              onClick={() => remove(line.id)}
+                              className="text-xs text-zinc-600 hover:text-[#d96857]"
+                            >
+                              Remove
+                            </button>
+                          </div>
+                        </div>
                       </div>
                     </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          );
+        })}
+
+              {/* Items without project */}
+              {groupedByProject.noProject.length > 0 && (
+                <div className="border-2 border-zinc-200 rounded-2xl overflow-hidden bg-white shadow-sm">
+                  <div className="bg-gradient-to-r from-zinc-100 to-white p-4 border-b border-zinc-200">
+                    <div className="font-semibold text-[#2e2e2e]">Other Items</div>
+                    <div className="text-xs text-zinc-500 mt-0.5">{groupedByProject.noProject.length} item{groupedByProject.noProject.length > 1 ? 's' : ''}</div>
+                  </div>
+                  <div className="divide-y divide-zinc-100">
+                    {groupedByProject.noProject.map(({ line, product }) => (
+                      <div key={line.id} className="p-3 hover:bg-zinc-50 transition">
+                        <div className="flex gap-3">
+                          <input type="checkbox" className="mt-2" checked={selectedIds.includes(line.id)} onChange={()=>toggleSelect(line.id)} />
+                          <img
+                            src={product?.imageUrl}
+                            alt={product?.title}
+                            className="w-24 h-24 object-cover rounded-xl border border-zinc-200"
+                          />
+                          <div className="flex-1">
+                            <div className="flex items-start justify-between">
+                              <div className="flex-1">
+                                <div className="text-sm font-semibold text-[#2e2e2e]">
+                                  {product?.title}
+                                </div>
+                                <div className={`mt-1 text-xs ${selectedIds.includes(line.id) ? "text-zinc-600" : "text-zinc-400 line-through"}`}>
+                                  ₹{product?.price.toLocaleString("en-IN")} per item
+                                </div>
+                                {line.area && (
+                                  <div className="mt-2">
+                                    <span className="inline-block bg-[#f2f0ed] border border-zinc-200 rounded-2xl px-2 py-1 text-xs text-[#2e2e2e]">
+                                      Area: {line.area}
+                                    </span>
+                                  </div>
+                                )}
+                              </div>
+                              <div className={`text-sm font-semibold ${selectedIds.includes(line.id) ? "text-[#2e2e2e]" : "text-zinc-400 line-through"}`}>
+                                ₹{((product?.price || 0) * line.qty).toLocaleString("en-IN")}
+                              </div>
+                            </div>
+                            <div className="mt-3 flex items-center justify-between">
+                              <div className="flex items-center gap-2">
+                                <button
+                                  onClick={() => changeQty(line.id, -1)}
+                                  className="rounded-2xl border border-zinc-300 bg-white px-3 py-1.5 text-sm hover:bg-zinc-50"
+                                >
+                                  −
+                                </button>
+                                <div className="w-8 text-center text-sm">{line.qty}</div>
+                                <button
+                                  onClick={() => changeQty(line.id, +1)}
+                                  className="rounded-2xl border border-zinc-300 bg-white px-3 py-1.5 text-sm hover:bg-zinc-50"
+                                >
+                                  +
+                                </button>
+                              </div>
+                              <button
+                                onClick={() => remove(line.id)}
+                                className="text-xs text-zinc-600 hover:text-[#d96857]"
+                              >
+                                Remove
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 </div>
-              ))}
+              )}
 
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between pt-4">
                 <Link
                   href="/products"
                   className="text-sm text-[#2e2e2e] underline underline-offset-4"

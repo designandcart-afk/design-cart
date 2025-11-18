@@ -10,12 +10,14 @@ export default function AreaModal({
   area,
   products,
   projectAddress,
+  projectId,
 }: {
   open: boolean;
   onClose: () => void;
   area: string;
   products: ProductT[];
   projectAddress: string;
+  projectId?: string;
 }) {
   const [lightbox, setLightbox] = useState<string | null>(null);
 
@@ -61,9 +63,38 @@ export default function AreaModal({
                 <button
                   className="w-full bg-[#d96857] hover:bg-[#c85745] text-white rounded-xl py-2.5 text-sm font-medium transition-colors"
                   onClick={() => {
+                    // Add product to cart in localStorage
+                    const CART_KEY = "dc:cart";
+                    const existing = localStorage.getItem(CART_KEY);
+                    const cart = existing ? JSON.parse(existing) : [];
+                    
+                    // Check if product already exists in cart
+                    const existingItem = cart.find((item: any) => 
+                      item.productId === p.id && item.area === area
+                    );
+                    
+                    if (existingItem) {
+                      // Increment quantity
+                      existingItem.qty += 1;
+                    } else {
+                      // Add new item
+                      const newItem = {
+                        id: `line_${Date.now()}`,
+                        productId: p.id,
+                        qty: 1,
+                        projectId: projectId, // Link to the project
+                        area: area,
+                      };
+                      cart.push(newItem);
+                    }
+                    
+                    localStorage.setItem(CART_KEY, JSON.stringify(cart));
+                    
+                    // Dispatch event for cart updates
                     try {
                       window.dispatchEvent(new CustomEvent("cart:add", { detail: { productId: p.id } }));
                     } catch {}
+                    
                     alert(`Added "${p.title}" to cart`);
                   }}
                 >

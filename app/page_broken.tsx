@@ -34,7 +34,7 @@ const SCOPES = [
 
 type SortKey = "date" | "name";
 
-export default function DashboardPage() {
+function DashboardContent() {
   const { projects, addProject } = useProjects();
 
   const [form, setForm] = useState<{
@@ -88,8 +88,6 @@ export default function DashboardPage() {
       scope: form.scope.trim() || "wip",
       address: form.address.trim() || undefined,
       notes: form.notes.trim() || undefined,
-      // Support comma-separated areas. Keep legacy `area` as first area if present.
-      areas: form.area ? form.area.split(',').map(a => a.trim()).filter(Boolean) : undefined,
       area: form.area.trim() || undefined,
       status: "wip",
       uploads,
@@ -170,8 +168,7 @@ export default function DashboardPage() {
   }, [projects, query, sortBy]);
 
   return (
-    <AuthGuard>
-      <main className="px-6 md:px-10 py-6 min-h-screen bg-[#f2f0ed]">
+    <main className="px-6 md:px-10 py-6 min-h-screen bg-[#f2f0ed]">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Add Project */}
         <div className="bg-white shadow-xl shadow-black/5 rounded-3xl p-6 border border-black/5">
@@ -304,34 +301,33 @@ export default function DashboardPage() {
 
           <div className="grid md:grid-cols-2 gap-4">
             {visibleProjects.map((p) => (
-              <Link
+              <div
                 key={p.id}
-                href={`/projects/${encodeURIComponent(p.id)}`}
-                className="block rounded-2xl border border-black/10 p-4 hover:shadow-md hover:border-[#d96857]/40 transition bg-white"
+                className="rounded-2xl border border-black/10 p-4 hover:shadow-md hover:border-[#d96857]/40 transition bg-white"
               >
-                <h3 className="text-[#d96857] font-medium">{p.name}</h3>
+                <Link href={`/projects/${encodeURIComponent(p.id)}`}>
+                  <h3 className="text-[#d96857] font-medium">{p.name}</h3>
+                </Link>
                 <p className="text-sm text-[#2e2e2e]/70">
                   {p.scope || "wip"}
-                  {p.areas && p.areas.length ? ` · ${p.areas[0]}` : p.area ? ` · ${p.area}` : ""}
+                  {p.area ? ` · ${p.area}` : ""}
                 </p>
                 {p.address && <p className="mt-1 text-sm text-[#2e2e2e]/60">{p.address}</p>}
 
                 <div className="mt-2 flex items-center gap-2">
-                  {p.status && (
-                    <span className="text-[11px] rounded-full bg-[#f9f8f7] border border-black/10 px-2 py-0.5 text-[#2e2e2e]/70">
-                      {p.status}
-                    </span>
-                  )}
-                  <span className="text-[11px] text-[#2e2e2e]/50">
-                    {new Date(p.createdAt).toLocaleDateString('en-GB', {
-                      day: '2-digit',
-                      month: '2-digit',
-                      year: 'numeric'
-                    })}
-                  </span>
-                </div>
-
-                {p.uploads && p.uploads.length > 0 && (
+  {p.status && (
+    <span className="text-[11px] rounded-full bg-[#f9f8f7] border border-black/10 px-2 py-0.5 text-[#2e2e2e]/70">
+      {p.status}
+    </span>
+  )}
+  <span className="text-[11px] text-[#2e2e2e]/50">
+    {new Date(p.createdAt).toLocaleDateString('en-GB', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric'
+    })}
+  </span>
+</div>                {p.uploads && p.uploads.length > 0 && (
                   <div className="mt-3">
                     <div className="text-xs text-[#2e2e2e]/60 mb-1">
                       {p.uploads.length} upload{p.uploads.length > 1 ? "s" : ""}
@@ -355,7 +351,7 @@ export default function DashboardPage() {
                     </div>
                   </div>
                 )}
-              </Link>
+              </div>
             ))}
 
             {/* Empty state */}
@@ -368,6 +364,13 @@ export default function DashboardPage() {
         </div>
       </div>
     </main>
+  );
+}
+
+export default function DashboardPage() {
+  return (
+    <AuthGuard>
+      <DashboardContent />
     </AuthGuard>
   );
 }
