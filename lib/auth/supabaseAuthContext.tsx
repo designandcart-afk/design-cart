@@ -101,6 +101,24 @@ export function SupabaseAuthProvider({ children }: { children: ReactNode }) {
         throw error;
       }
 
+      // If user is created, insert details into designer_details
+      if (data.user) {
+        const { error: insertError } = await supabase
+          .from('designer_details')
+          .insert([
+            {
+              user_name: data.user.user_metadata?.name || '',
+              email: data.user.email,
+              created_at: data.user.created_at,
+            },
+          ]);
+        if (insertError) {
+          console.error('Error inserting designer details:', insertError);
+        } else {
+          console.log('Designer details inserted successfully');
+        }
+      }
+
       if (data.user && !data.session) {
         // User needs to verify email
         return;

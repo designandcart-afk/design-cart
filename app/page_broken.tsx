@@ -36,6 +36,7 @@ type SortKey = "date" | "name";
 
 function DashboardContent() {
   const { projects, addProject } = useProjects();
+  const { user } = useAuth();
 
   const [form, setForm] = useState<{
     name: string;
@@ -83,7 +84,8 @@ function DashboardContent() {
       }));
     }
 
-    const p: Omit<DemoProject, 'id' | 'createdAt'> = {
+    // Get user from auth context
+    const p: Omit<DemoProject, 'id' | 'createdAt'> & { user_id?: string } = {
       name: form.name.trim(),
       scope: form.scope.trim() || "wip",
       address: form.address.trim() || undefined,
@@ -91,8 +93,8 @@ function DashboardContent() {
       area: form.area.trim() || undefined,
       status: "wip",
       uploads,
+      user_id: user?.id,
     };
-
     addProject(p);
     setForm({
       name: "",

@@ -58,10 +58,16 @@ export default function ProductCard({ product }: ProductCardProps) {
       {/* Content */}
       <div className="p-4">
         <div className="space-y-3">
-          {/* Title */}
+
+          {/* Title and Brand */}
           <h3 className="font-medium text-[#2e2e2e] leading-snug">
             {product.title}
           </h3>
+          {product.brand && (
+            <div className="text-sm text-[#2e2e2e]/60 font-medium mt-0.5">
+              {product.brand}
+            </div>
+          )}
 
           {/* Categories */}
           <div className="flex flex-wrap gap-2">
@@ -79,10 +85,17 @@ export default function ProductCard({ product }: ProductCardProps) {
 
           {/* Price and Rating */}
           <div className="flex items-center justify-between pt-1">
-            <div className="font-semibold text-[#2e2e2e]">
-              ₹{typeof product.price === "number"
-                ? product.price.toLocaleString("en-IN")
-                : product.price}
+            <div>
+              <span className="text-lg font-semibold text-[#d96857]">
+                {typeof product.price === "number"
+                  ? `₹${product.price.toLocaleString("en-IN")}`
+                  : product.price}
+              </span>
+              {typeof product.mrp === "number" && product.mrp > product.price && (
+                <span className="ml-2 text-sm text-zinc-400 line-through">
+                  ₹{product.mrp.toLocaleString("en-IN")}
+                </span>
+              )}
             </div>
             {product.rating && (
               <div className="flex items-center gap-1.5 bg-[#f9f8f7] px-2 py-1 rounded-full">

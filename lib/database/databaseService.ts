@@ -57,16 +57,48 @@ class DatabaseService {
   }
 
   // Project operations
-  async createProject(projectData: Omit<Project, 'id' | 'createdAt' | 'updatedAt' | 'areas'>): Promise<Project> {
-    const project: Project = {
-      id: `proj_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-      areas: [],
-      ...projectData,
+  async createProject(projectData: any): Promise<any> {
+    // Import supabase client
+    const { supabase } = await import('../supabase');
+    // Generate a random project_code if not provided
+    const project_code = projectData.project_code || `PID${Math.floor(100000 + Math.random() * 900000)}`;
+    // Accept areas as array (from frontend)
+    const areas = Array.isArray(projectData.areas)
+      ? projectData.areas.filter((a: string) => !!a && a.trim())
+      : [];
+    const insertData = {
+      project_name: projectData.project_name,
+      scope_of_work: projectData.scope_of_work,
+      address_full: projectData.address_full,
+      notes: projectData.notes,
+      user_id: projectData.user_id,
+      project_folder_url: projectData.project_folder_url,
+      project_code,
+      areas: areas.length ? areas : null,
     };
-    
-    this.projects.set(project.id, project);
+    // Insert project and get the new project id
+    const { data, error } = await supabase
+      .from('projects')
+      .insert([insertData])
+      .select();
+    if (error) {
+      throw new Error('Supabase insert error: ' + error.message);
+    }
+    const project = data?.[0];
+    // Insert each area into project_areas table
+    if (project && project.id && areas.length) {
+      const areaRows = areas.map((area: string) => ({
+        project_id: project.id,
+        area_name: area,
+      }));
+      const { error: areaError } = await supabase
+        .from('project_areas')
+        .insert(areaRows);
+      if (areaError) {
+        // Not fatal, but log
+        console.error('Error inserting project_areas:', areaError);
+      }
+    }
     return project;
   }
 

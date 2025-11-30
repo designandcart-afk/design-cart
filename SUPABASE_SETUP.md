@@ -31,11 +31,11 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 1. Go to **Authentication** → **Settings**
 2. Under **Site URL**, add your local development URL:
    ```
-   http://localhost:3000
+   http://localhost:4000
    ```
 3. Under **Redirect URLs**, add:
    ```
-   http://localhost:3000/auth/callback
+   http://localhost:4000/auth/callback
    ```
 4. **Enable Email Confirmations** (recommended for production)
 
@@ -79,7 +79,7 @@ The application uses Supabase's built-in auth schema. If you need additional use
    npm run dev -- -p 3000
    ```
 
-2. Go to `http://localhost:3000/login`
+2. Go to `http://localhost:4000/login`
 
 3. Try creating a new account with a real email address
 

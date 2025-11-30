@@ -10,9 +10,10 @@ import {
   demoProjectProducts,
   demoProductsAll,
 } from "@/lib/demoData";
+import { supabase } from '@/lib/supabase';
 import { useProjects } from '@/lib/contexts/projectsContext';
 import { Button, Badge, Input } from "@/components/UI";
-import { MessageCircle, ClipboardList, FolderOpen, ChevronLeft, ChevronRight, X, Send, Paperclip, CalendarDays, Image as ImageIcon, PlusCircle } from "lucide-react";
+import { MessageCircle, ClipboardList, FolderOpen, ChevronLeft, ChevronRight, X, Send, Paperclip, CalendarDays, Image as ImageIcon, PlusCircle, Trash2 } from "lucide-react";
 import AreaModal from "@/components/AreaModal";
 import CenterModal from "@/components/CenterModal";
 import ChatMessage from "@/components/chat/ChatMessage";
@@ -25,7 +26,7 @@ export default function ProjectDetailPage() {
   const projectId = params?.id as string;
   const router = useRouter();
 
-  const { getProject } = useProjects();
+  const { getProject, deleteProject: deleteProjectFromContext } = useProjects();
   const project = useMemo(() => {
     // Prefer project from context (real/demo), fallback to seeded demoProjects
     return getProject(projectId) ?? (demoProjects ?? []).find((p) => p.id === projectId);
@@ -59,11 +60,217 @@ export default function ProjectDetailPage() {
   const [addingArea, setAddingArea] = useState(false);
   const [newAreaName, setNewAreaName] = useState("");
 
+  // Delete confirmation
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  // File upload state
+  const [uploadingFiles, setUploadingFiles] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+
+  // Request change modal state
+  const [requestChangeModal, setRequestChangeModal] = useState<{
+    open: boolean;
+    area: string;
+    type: 'renders' | 'screenshots';
+    index: number;
+  } | null>(null);
+  const [changeNotes, setChangeNotes] = useState("");
+
   // Force refresh of linked products when localStorage changes
   const [productRefreshKey, setProductRefreshKey] = useState(0);
 
+  // Load linked products - must be before early return
+  const [linked, setLinked] = useState<any[]>([]);
+  const [screenshots, setScreenshots] = useState<any[]>([]);
+  const [renders, setRenders] = useState<any[]>([]);
+
+  // Define functions that will be used in useEffect
+  async function loadChatMessages() {
+    if (!projectId) return;
+    try {
+      setIsLoadingChat(true);
+      const msgs = await storage.getMessages(projectId);
+      if (msgs.length === 0) {
+        // Seed welcome message
+        const welcomeMsg: StorageChatMessage = {
+          id: `m_${projectId}_welcome`,
+          projectId,
+          sender: "agent",
+          text: `Hi, I'm your project assistant! 👋 Feel free to share your requirements, upload files, or ask me anything about your project.`,
+          ts: Date.now(),
+        };
+        await storage.saveMessage(welcomeMsg);
+        setMessages([welcomeMsg]);
+      } else {
+        setMessages(msgs);
+      }
+    } catch (err) {
+      setChatError('Failed to load messages');
+      console.error(err);
+    } finally {
+      setIsLoadingChat(false);
+    }
+  }
+
+  // Handle approval
+  const handleApprove = async (area: string, type: 'renders' | 'screenshots', index: number) => {
+    setApprovalStatus(prev => ({
+      ...prev,
+      [area]: {
+        ...prev[area],
+        [type]: {
+          ...prev[area]?.[type],
+          [index]: 'approved'
+        }
+      }
+    }));
+
+    // Update Supabase
+    if (!isDemoProject) {
+      const items = type === 'renders' ? rendersForArea(area) : screenshotsFor(area);
+      const item = items[index];
+      if (item?.id) {
+        const tableName = type === 'renders' ? 'project_renders' : 'project_screenshots';
+        await supabase
+          .from(tableName)
+          .update({ 
+            approval_status: 'approved',
+            change_notes: null,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', item.id);
+      }
+    }
+  };
+
+  // Handle request change - open modal
+  const handleRequestChange = (area: string, type: 'renders' | 'screenshots', index: number) => {
+    setRequestChangeModal({ open: true, area, type, index });
+    setChangeNotes("");
+  };
+
+  // Submit request change with notes
+  const submitRequestChange = async () => {
+    if (!requestChangeModal) return;
+    const { area, type, index } = requestChangeModal;
+    
+    setApprovalStatus(prev => ({
+      ...prev,
+      [area]: {
+        ...prev[area],
+        [type]: {
+          ...prev[area]?.[type],
+          [index]: 'requested-change'
+        }
+      }
+    }));
+
+    // Update Supabase
+    if (!isDemoProject) {
+      const items = type === 'renders' ? rendersForArea(area) : screenshotsFor(area);
+      const item = items[index];
+      if (item?.id) {
+        const tableName = type === 'renders' ? 'project_renders' : 'project_screenshots';
+        await supabase
+          .from(tableName)
+          .update({ 
+            approval_status: 'change_requested',
+            change_notes: changeNotes.trim(),
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', item.id);
+      }
+    }
+
+    // Save the change request as a chat message
+    if (changeNotes.trim() && projectId) {
+      const msg: StorageChatMessage = {
+        id: `m_${Date.now()}`,
+        projectId,
+        sender: "designer",
+        text: `🔄 Change requested for ${area} - ${type}:\n${changeNotes}`,
+        ts: Date.now(),
+      };
+      await storage.saveMessage(msg);
+      setMessages(prev => [...prev, msg]);
+    }
+
+    setRequestChangeModal(null);
+    setChangeNotes("");
+  };
+
+  // Get status buttons for renders/screenshots
+  const getStatusButtons = (area: string, type: 'renders' | 'screenshots', index: number) => {
+    // Check Supabase data first for real projects
+    if (!isDemoProject) {
+      const items = type === 'renders' ? rendersForArea(area) : screenshotsFor(area);
+      const item = items[index];
+      if (item?.approval_status) {
+        if (item.approval_status === 'approved') {
+          return (
+            <div className="bg-green-500 text-white px-4 py-2 rounded-full text-sm font-medium shadow-lg">
+              ✓ Approved
+            </div>
+          );
+        }
+        if (item.approval_status === 'change_requested') {
+          return (
+            <div className="bg-orange-500 text-white px-4 py-2 rounded-full text-sm font-medium shadow-lg">
+              🔄 Change Requested
+            </div>
+          );
+        }
+      }
+    }
+    
+    // Fallback to local state for demo projects
+    const status = approvalStatus[area]?.[type]?.[index];
+    
+    if (status === 'approved') {
+      return (
+        <div className="bg-green-500 text-white px-4 py-2 rounded-full text-sm font-medium shadow-lg">
+          ✓ Approved
+        </div>
+      );
+    }
+    
+    if (status === 'requested-change') {
+      return (
+        <div className="bg-orange-500 text-white px-4 py-2 rounded-full text-sm font-medium shadow-lg">
+          🔄 Change Requested
+        </div>
+      );
+    }
+    
+    return (
+      <div className="flex gap-2">
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            handleApprove(area, type, index);
+          }}
+          className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-full text-sm font-medium transition-colors shadow-lg"
+        >
+          ✓ Approve
+        </button>
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            handleRequestChange(area, type, index);
+          }}
+          className="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-full text-sm font-medium transition-colors shadow-lg"
+        >
+          🔄 Request Change
+        </button>
+      </div>
+    );
+  };
+
   // Listen for changes to project products in localStorage
   useEffect(() => {
+    if (!project) return; // Guard against null project
+    
     const handleStorageChange = (e: StorageEvent) => {
       if (e.key === 'dc:projectProducts') {
         setProductRefreshKey(prev => prev + 1);
@@ -94,35 +301,7 @@ export default function ProjectDetailPage() {
       window.removeEventListener('projectProductsUpdated', handleRefresh);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
-  }, []);
-
-  // Define functions that will be used in useEffect
-  async function loadChatMessages() {
-    if (!projectId) return;
-    try {
-      setIsLoadingChat(true);
-      const msgs = await storage.getMessages(projectId);
-      if (msgs.length === 0) {
-        // Seed welcome message
-        const welcomeMsg: StorageChatMessage = {
-          id: `m_${projectId}_welcome`,
-          projectId,
-          sender: "agent",
-          text: `Hello! I'm your agent. Share requirements or files here — I'll guide you end-to-end.`,
-          ts: Date.now(),
-        };
-        await storage.saveMessage(welcomeMsg);
-        setMessages([welcomeMsg]);
-      } else {
-        setMessages(msgs);
-      }
-    } catch (err) {
-      setChatError('Failed to load messages');
-      console.error(err);
-    } finally {
-      setIsLoadingChat(false);
-    }
-  }
+  }, [project]);
 
   // Load messages when chat opens
   useEffect(() => {
@@ -131,7 +310,119 @@ export default function ProjectDetailPage() {
     }
   }, [chatOpen, projectId]);
 
-  // NOW we can do the early return after all hooks
+  // Load screenshots and renders from Supabase
+  useEffect(() => {
+    if (!project || project.id.startsWith('demo_')) return;
+    
+    async function loadScreenshotsAndRenders() {
+      try {
+        // Load screenshots
+        const { data: screenshotsData, error: screenshotsError } = await supabase
+          .from('project_screenshots')
+          .select('*')
+          .eq('project_id', project.id)
+          .order('created_at', { ascending: true });
+        
+        if (screenshotsError) {
+          console.error('Error loading screenshots:', screenshotsError);
+        } else {
+          setScreenshots(screenshotsData || []);
+        }
+
+        // Load renders
+        const { data: rendersData, error: rendersError } = await supabase
+          .from('project_renders')
+          .select('*')
+          .eq('project_id', project.id)
+          .order('created_at', { ascending: true });
+        
+        if (rendersError) {
+          console.error('Error loading renders:', rendersError);
+        } else {
+          setRenders(rendersData || []);
+        }
+      } catch (err) {
+        console.error('Error loading screenshots/renders:', err);
+      }
+    }
+
+    loadScreenshotsAndRenders();
+  }, [project]);
+
+  // Load linked products
+  useEffect(() => {
+    if (!project) return; // Guard against null project
+    
+    const isDemoProject = project.id.startsWith('demo_');
+    if (isDemoProject) {
+      setLinked((demoProjectProducts ?? []).filter((pp) => pp.projectId === project.id));
+    } else {
+      // For real user projects, fetch from both Supabase AND localStorage
+      async function fetchLinked() {
+        // First, get from Supabase
+        const { data: supabaseData, error } = await supabase
+          .from('project_products')
+          .select('*, product:products(*)')
+          .eq('project_id', project.id);
+        
+        if (error) {
+          console.error('Failed to fetch project_products from Supabase:', error);
+        }
+        
+        // Then, get from localStorage
+        const localKey = "dc:projectProducts";
+        const localData = JSON.parse(localStorage.getItem(localKey) || "[]");
+        const localProjectProducts = localData.filter((pp: any) => pp.projectId === project.id);
+        
+        // Fetch product details for localStorage entries
+        const localProductsWithDetails = await Promise.all(
+          localProjectProducts.map(async (pp: any) => {
+            const { data: productData } = await supabase
+              .from('products')
+              .select('*')
+              .eq('id', pp.productId)
+              .single();
+            
+            return {
+              ...pp,
+              product: productData,
+            };
+          })
+        );
+        
+        // Combine both sources (Supabase + localStorage)
+        const combined = [
+          ...(supabaseData || []),
+          ...localProductsWithDetails.filter(p => p.product), // Only include if product was found
+        ];
+        
+        setLinked(combined);
+      }
+      fetchLinked();
+    }
+  }, [project, productRefreshKey]);
+
+  // Keyboard navigation for lightbox
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (!lightboxOpen) return;
+      
+      if (e.key === 'Escape') {
+        setLightboxOpen(false);
+      } else if (e.key === 'ArrowLeft') {
+        setLightboxIndex((prev) => (prev - 1 + lightboxImages.length) % lightboxImages.length);
+      } else if (e.key === 'ArrowRight') {
+        setLightboxIndex((prev) => (prev + 1) % lightboxImages.length);
+      }
+    };
+
+    if (lightboxOpen) {
+      window.addEventListener('keydown', handleKeyDown);
+      return () => window.removeEventListener('keydown', handleKeyDown);
+    }
+  }, [lightboxOpen, lightboxImages.length]);
+
+  // Early return AFTER all hooks to comply with Rules of Hooks
   if (!project) return <div className="container py-8">Project not found</div>;
 
   const projectCode = `#DAC-${project.id.slice(0, 6).toUpperCase()}`;
@@ -173,60 +464,88 @@ export default function ProjectDetailPage() {
     }
   ] : [];
 
-  // Load linked products - demo projects use demoProjectProducts, real users use localStorage
-  const linked = useMemo(() => {
-    if (isDemoProject) {
-      return (demoProjectProducts ?? []).filter((pp) => pp.projectId === project.id);
-    } else {
-      // Load from localStorage for real user projects
-      const key = "dc:projectProducts";
-      const stored = localStorage.getItem(key);
-      if (!stored) return [];
-      try {
-        const allLinks = JSON.parse(stored);
-        return allLinks.filter((pp: any) => pp.projectId === project.id);
-      } catch (err) {
-        console.error('Failed to parse project products:', err);
-        return [];
-      }
-    }
-  }, [isDemoProject, project.id, productRefreshKey]);
-
-  const allRendersForProject = isDemoProject ? (demoRenders ?? []).filter(
-    (r) => r.projectId === project.id
-  ) : [];
+  const allRendersForProject = isDemoProject 
+    ? (demoRenders ?? []).filter((r) => r.projectId === project.id)
+    : renders;
 
   // Derive areas: use project's areas (user-provided) or empty array for real users
   const derivedFromLinks = Array.from(new Set(linked.map((l) => l.area))).filter(Boolean) as string[];
   const derivedFromRenders = Array.from(new Set(allRendersForProject.map((r) => r.area).filter(Boolean) as string[]));
+  const derivedFromScreenshots = Array.from(new Set(screenshots.map((s) => s.area).filter(Boolean) as string[]));
   const areas = (project.areas && project.areas.length)
     ? project.areas
     : project.area
       ? [project.area]
-      : (isDemoProject ? (derivedFromLinks.length ? derivedFromLinks : (derivedFromRenders.length ? derivedFromRenders : [])) : []);
+      : (isDemoProject ? (derivedFromLinks.length ? derivedFromLinks : (derivedFromRenders.length ? derivedFromRenders : [])) : (derivedFromScreenshots.length ? derivedFromScreenshots : []));
 
-  // No mock screenshots for real user projects
-  const screenshotsFor = (area: string) => isDemoProject ? [1, 2].map((n) => ({
-      id: `${area}-${n}`,
-      imageUrl: `https://picsum.photos/seed/${encodeURIComponent(
-        area + n
-      )}/1200/800`,
-    })) : [];
-
-  const productsFor = (area: string) =>
-    linked
-      .filter((l) => l.area === area)
-      .map((l) => (demoProductsAll ?? []).find((p) => p.id === l.productId))
-      .filter((p): p is NonNullable<typeof p> => Boolean(p))
-      .map((p) => ({
-        id: p.id,
-        title: p.title,
-        imageUrl: p.imageUrl,
-        price: p.price,
+  // Screenshots from Supabase for real projects, mock for demo
+  const screenshotsFor = (area: string) => {
+    if (isDemoProject) {
+      return [1, 2].map((n) => ({
+        id: `${area}-${n}`,
+        imageUrl: `https://picsum.photos/seed/${encodeURIComponent(area + n)}/1200/800`,
       }));
+    }
+    return screenshots
+      .filter((s) => s.area === area)
+      .map((s) => ({
+        ...s,
+        imageUrl: s.image_url, // Map database field to UI field
+      }));
+  };
 
-  const rendersForArea = (area: string) =>
-    allRendersForProject.filter((r) => r.area === area);
+  // Renders for area
+  const rendersForArea = (area: string) => {
+    const filtered = allRendersForProject.filter((r) => r.area === area);
+    // Map database field to UI field for non-demo projects
+    if (!isDemoProject) {
+      return filtered.map((r) => ({
+        ...r,
+        imageUrl: r.image_url,
+      }));
+    }
+    return filtered;
+  };
+
+  const productsFor = (area: string) => {
+    if (isDemoProject) {
+      return linked
+        .filter((l) => l.area === area)
+        .map((l) => (demoProductsAll ?? []).find((p) => p.id === l.productId))
+        .filter((p): p is NonNullable<typeof p> => Boolean(p))
+        .map((p) => ({
+          id: p.id,
+          title: p.title,
+          imageUrl: p.imageUrl,
+          price: p.price,
+        }));
+    } else {
+      return linked
+        .filter((l) => l.area === area && l.product)
+        .map((l) => ({
+          id: l.product.id,
+          title: l.product.title || l.product.name || 'Product',
+          imageUrl: l.product.image_url || l.product.imageUrl,
+          price: l.product.price || l.product.selling_price || 0,
+        }));
+    }
+  };
+
+  // Get unique products with their counts for display
+  const getUniqueProductsWithCount = (area: string) => {
+    const products = productsFor(area);
+    const productMap = new Map<string, { product: typeof products[0], count: number }>();
+    
+    products.forEach(p => {
+      if (productMap.has(p.id)) {
+        productMap.get(p.id)!.count++;
+      } else {
+        productMap.set(p.id, { product: p, count: 1 });
+      }
+    });
+    
+    return Array.from(productMap.values());
+  };
 
   async function sendChat(text?: string, attachments?: UploadedFile[], meetingInfo?: StorageChatMessage['meetingInfo']) {
     const messageText = text || chatText;
@@ -318,18 +637,118 @@ export default function ProjectDetailPage() {
   // Add new area to project
   const { updateProject } = useProjects();
   
-  const handleAddArea = () => {
+  const handleAddArea = async () => {
     if (!newAreaName.trim()) return;
-    
+
     const currentAreas = project.areas || (project.area ? [project.area] : []);
     const updatedAreas = [...currentAreas, newAreaName.trim()];
-    
+
+    // Update local context first for immediate UI feedback
     updateProject(project.id, {
       areas: updatedAreas
     });
-    
+
+    // Update Supabase projects table with new areas array
+    if (!isDemoProject) {
+      try {
+        const { error: projectError } = await supabase
+          .from('projects')
+          .update({ areas: updatedAreas })
+          .eq('id', project.id);
+
+        if (projectError) {
+          console.error('Error updating project areas in Supabase:', projectError);
+        }
+
+        // Also insert into project_areas table for detailed tracking
+        const areaId = `AREA_${Date.now()}`;
+        const now = new Date().toISOString();
+        const { error: areaError } = await supabase
+          .from('project_areas')
+          .insert([
+            {
+              id: areaId,
+              project_id: project.id,
+              area_name: newAreaName.trim(),
+              area_type: '',
+              status: 'created',
+              created_at: now,
+              updated_at: now,
+            },
+          ]);
+
+        if (areaError) {
+          console.error('Error inserting project area into Supabase:', areaError);
+        }
+      } catch (error) {
+        console.error('Error saving area:', error);
+      }
+    }
+
     setNewAreaName("");
     setAddingArea(false);
+  };
+
+  const handleDeleteProject = async () => {
+    setIsDeleting(true);
+    try {
+      // Delete from Supabase if it's a real project
+      if (!isDemoProject) {
+        const { error } = await supabase
+          .from('projects')
+          .delete()
+          .eq('id', project.id);
+        
+        if (error) {
+          console.error('Error deleting project:', error);
+          alert('Failed to delete project. Please try again.');
+          setIsDeleting(false);
+          return;
+        }
+      }
+      
+      // Remove from context (this will update the dashboard immediately)
+      deleteProjectFromContext(project.id);
+      
+      // Navigate back to dashboard
+      router.push('/projects');
+    } catch (error) {
+      console.error('Error deleting project:', error);
+      alert('Failed to delete project. Please try again.');
+      setIsDeleting(false);
+      setShowDeleteConfirm(false);
+    }
+  };
+
+  const handleFileUpload = async (files: FileList) => {
+    if (!files || files.length === 0) return;
+    
+    setUploadingFiles(true);
+    setUploadError(null);
+    
+    try {
+      const uploaded = await uploadFiles(
+        Array.from(files).map(file => ({
+          file,
+          type: 'file',
+          projectId
+        }))
+      );
+      
+      // Refresh files list or show success message
+      alert(`Successfully uploaded ${uploaded.length} file(s)`);
+      
+      // You can add the files to a state or refetch them here
+    } catch (err) {
+      if (err instanceof UploadError) {
+        setUploadError(err.message);
+      } else {
+        setUploadError('Failed to upload files');
+      }
+      console.error(err);
+    } finally {
+      setUploadingFiles(false);
+    }
   };
 
   const handleApproval = (area: string, type: 'renders' | 'screenshots', index: number, status: 'approved' | 'requested-change') => {
@@ -350,34 +769,6 @@ export default function ProjectDetailPage() {
 
   const getStatus = (area: string, type: 'renders' | 'screenshots', index: number) => {
     return approvalStatus[area]?.[type]?.[index] || null;
-  };
-
-  const getStatusButtons = (area: string, type: 'renders' | 'screenshots', index: number) => {
-    const status = getStatus(area, type, index);
-    if (status) {
-      return (
-        <div className="bg-white/90 backdrop-blur px-4 py-2 rounded-full text-sm">
-          {status === 'approved' ? '✓ Approved' : '⟲ Change Requested'}
-        </div>
-      );
-    }
-    return (
-      <>
-        <Button 
-          className="bg-[#d96857] text-white px-6" 
-          onClick={() => handleApproval(area, type, index, 'approved')}
-        >
-          Approve
-        </Button>
-        <Button 
-          variant="outline" 
-          className="bg-white px-6" 
-          onClick={() => handleApproval(area, type, index, 'requested-change')}
-        >
-          Request Change
-        </Button>
-      </>
-    );
   };
 
   // Open lightbox for renders/screenshots
@@ -401,29 +792,21 @@ export default function ProjectDetailPage() {
     setLightboxIndex((prev) => (prev - 1 + lightboxImages.length) % lightboxImages.length);
   };
 
-  // Keyboard navigation for lightbox
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (!lightboxOpen) return;
-      
-      if (e.key === 'Escape') {
-        closeLightbox();
-      } else if (e.key === 'ArrowLeft') {
-        prevLightboxImage();
-      } else if (e.key === 'ArrowRight') {
-        nextLightboxImage();
-      }
-    };
-
-    if (lightboxOpen) {
-      window.addEventListener('keydown', handleKeyDown);
-      return () => window.removeEventListener('keydown', handleKeyDown);
-    }
-  }, [lightboxOpen, lightboxImages.length]);
-
   return (
     <AuthGuard>
       <div className="py-4 bg-[#f4f3f0] -mx-4 px-4 rounded-2xl">
+        {/* Back Button - Top Left */}
+        <div className="mb-3">
+          <Button
+            variant="outline"
+            onClick={() => history.back()}
+            className="px-3 py-1.5 text-sm text-black/70 hover:bg-gray-100 border-black/20 inline-flex items-center gap-1.5"
+          >
+            <ChevronLeft className="w-4 h-4" />
+            Back to dashboard
+          </Button>
+        </div>
+
         <div className="relative bg-white/90 border rounded-2xl p-5 shadow-lg shadow-black/5">
           <div className="flex items-start justify-between gap-3">
             <div>
@@ -459,42 +842,40 @@ export default function ProjectDetailPage() {
               </div>
             </div>
 
-            <div className="flex flex-col items-end gap-2">
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  onClick={() => history.back()}
-                  className="px-4 text-black/70 hover:bg-gray-100"
-                >
-                  Back
-                </Button>
-              </div>
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  onClick={() => setChatOpen(true)}
-                  className="flex items-center justify-center w-10 h-10 p-0 text-[#d96857] hover:bg-[#d96857] hover:text-white"
-                  title="Chat"
-                >
-                  <MessageCircle className="w-5 h-5" />
-                </Button>
-                <Button
-                  variant="outline"
-                  onClick={() => setMeetOpen(true)}
-                  className="flex items-center justify-center w-10 h-10 p-0 text-[#d96857] hover:bg-[#d96857] hover:text-white"
-                  title="Meeting Summary"
-                >
-                  <ClipboardList className="w-5 h-5" />
-                </Button>
-                <Button
-                  variant="outline"
-                  onClick={() => setFilesOpen(true)}
-                  className="flex items-center justify-center w-10 h-10 p-0 text-[#d96857] hover:bg-[#d96857] hover:text-white"
-                  title="Files"
-                >
-                  <FolderOpen className="w-5 h-5" />
-                </Button>
-              </div>
+            {/* Action Buttons - Icon Only */}
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                onClick={() => setChatOpen(true)}
+                className="flex items-center justify-center w-10 h-10 p-0 text-[#d96857] hover:bg-[#d96857] hover:text-white border-[#d96857]/30 transition-all"
+                title="Chat"
+              >
+                <MessageCircle className="w-5 h-5" />
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => setMeetOpen(true)}
+                className="flex items-center justify-center w-10 h-10 p-0 text-[#d96857] hover:bg-[#d96857] hover:text-white border-[#d96857]/30 transition-all"
+                title="Meeting Summary"
+              >
+                <ClipboardList className="w-5 h-5" />
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => setFilesOpen(true)}
+                className="flex items-center justify-center w-10 h-10 p-0 text-[#d96857] hover:bg-[#d96857] hover:text-white border-[#d96857]/30 transition-all"
+                title="Files"
+              >
+                <FolderOpen className="w-5 h-5" />
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => setShowDeleteConfirm(true)}
+                className="flex items-center justify-center w-10 h-10 p-0 text-red-600 hover:bg-red-600 hover:text-white border-red-600/30 transition-all"
+                title="Delete Project"
+              >
+                <Trash2 className="w-5 h-5" />
+              </Button>
             </div>
           </div>
         </div>
@@ -679,6 +1060,7 @@ export default function ProjectDetailPage() {
             const areaRenders = rendersForArea(area).slice(0, 2);
             const areaScreens = screenshotsFor(area);
             const areaProducts = productsFor(area);
+            const uniqueProductsWithCount = getUniqueProductsWithCount(area);
 
             return (
               <div
@@ -843,7 +1225,14 @@ export default function ProjectDetailPage() {
 
                 <div className="mt-3 pl-2">
                   <div className="flex items-center justify-between mb-2">
-                    <div className="text-xs font-medium text-black/70">Products</div>
+                    <div className="flex items-center gap-2">
+                      <div className="text-xs font-medium text-black/70">Products</div>
+                      {areaProducts.length > 0 && (
+                        <div className="px-2 py-0.5 bg-[#d96857] text-white text-[10px] font-semibold rounded-full">
+                          {areaProducts.length}
+                        </div>
+                      )}
+                    </div>
                     <button
                       className="text-xs font-medium text-[#d96857] hover:text-[#c85745] transition-colors flex items-center gap-1"
                       onClick={() => setOpenArea(area)}
@@ -852,19 +1241,39 @@ export default function ProjectDetailPage() {
                     </button>
                   </div>
                   <div className="flex gap-2 overflow-x-auto pb-1">
-                    {areaProducts.map((p) => (
+                    {uniqueProductsWithCount.map(({ product: p, count }) => (
                       <div
                         key={p.id}
-                        className="flex-shrink-0 cursor-pointer group"
+                        className="flex-shrink-0 cursor-pointer group relative"
                         onClick={() => setOpenArea(area)}
                       >
-                        <img
-                          src={p.imageUrl}
-                          className="w-[80px] h-[80px] object-cover rounded-lg border border-black/5 group-hover:border-[#d96857]/30 transition-all group-hover:shadow-md"
-                          alt={p.title}
-                        />
+                        <div className="relative w-[80px] h-[80px] rounded-lg overflow-visible">
+                          <img
+                             src={p.imageUrl}
+                             className="w-full h-full object-cover rounded-lg border border-black/5 group-hover:border-[#d96857]/30 transition-all group-hover:shadow-md"
+                             alt={p.title}
+                          />
+                          {/* Product count badge */}
+                          {
+                            count > 1 && (
+                            <div className="absolute -top-2 -right-2 w-6 h-6 bg-[#d96857] text-white text-[11px] font-bold rounded-full flex items-center justify-center shadow-lg border-2 border-white z-20">
+                              {count}
+                            </div>
+                          )}
+                        </div>
                       </div>
                     ))}
+                    {/* Add more products button when products exist */}
+                    {areaProducts.length > 0 && (
+                      <button
+                        onClick={() => router.push('/products')}
+                        className="flex-shrink-0 w-[80px] h-[80px] rounded-lg border-2 border-dashed border-[#d96857]/30 hover:border-[#d96857]/60 bg-[#d96857]/5 hover:bg-[#d96857]/10 transition-all flex items-center justify-center group"
+                      >
+                        <svg className="w-8 h-8 text-[#d96857]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                        </svg>
+                      </button>
+                    )}
                     {areaProducts.length === 0 && (
                       <button
                         onClick={() => router.push('/products')}
@@ -1197,10 +1606,63 @@ export default function ProjectDetailPage() {
       {/* Files */}
       <CenterModal
         open={filesOpen}
-        onClose={() => setFilesOpen(false)}
+        onClose={() => {
+          setFilesOpen(false);
+          setUploadError(null);
+        }}
         title="Project Files"
         maxWidth="max-w-4xl"
       >
+        {/* Upload Section */}
+        <div className="mb-6 p-4 border-2 border-dashed border-[#d96857]/30 rounded-2xl bg-[#d96857]/5">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-sm font-semibold text-[#2e2e2e] mb-1">Upload Files</h3>
+              <p className="text-xs text-[#2e2e2e]/60">Add documents, images, or any project-related files</p>
+            </div>
+            <div className="flex gap-2">
+              <input
+                type="file"
+                id="file-upload-input"
+                multiple
+                onChange={(e) => {
+                  if (e.target.files) {
+                    handleFileUpload(e.target.files);
+                    e.target.value = ''; // Reset input
+                  }
+                }}
+                className="hidden"
+                disabled={uploadingFiles}
+              />
+              <Button
+                onClick={() => document.getElementById('file-upload-input')?.click()}
+                disabled={uploadingFiles}
+                className="bg-[#d96857] text-white hover:bg-[#c85745] px-4 py-2 flex items-center gap-2 disabled:opacity-50"
+              >
+                {uploadingFiles ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    <span className="text-sm">Uploading...</span>
+                  </>
+                ) : (
+                  <>
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                    </svg>
+                    <span className="text-sm font-medium">Choose Files</span>
+                  </>
+                )}
+              </Button>
+            </div>
+          </div>
+          {uploadError && (
+            <div className="mt-3 p-2 bg-red-50 border border-red-200 rounded-lg text-xs text-red-600">
+              {uploadError}
+            </div>
+          )}
+        </div>
+
+        {/* Files List */}
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
           {(files ?? []).map((f) => (
             <a
@@ -1208,19 +1670,27 @@ export default function ProjectDetailPage() {
               href={f.url}
               target="_blank"
               rel="noreferrer"
-              className="border rounded-2xl p-3 hover:bg-black/5"
+              className="border rounded-2xl p-3 hover:bg-black/5 transition-all hover:shadow-md"
             >
               <div className="text-xs text-black/60 mb-1">{f.type.toUpperCase()}</div>
               <div className="flex items-center gap-2">
-                <div className="w-14 h-14 rounded-xl bg-black/5 flex items-center justify-center">
-                  <span className="text-xs">{f.type.toUpperCase()}</span>
+                <div className="w-14 h-14 rounded-xl bg-[#d96857]/10 flex items-center justify-center">
+                  <span className="text-xs font-semibold text-[#d96857]">{f.type.toUpperCase()}</span>
                 </div>
-                <div className="truncate">{f.url}</div>
+                <div className="truncate text-sm">{f.url.split('/').pop() || 'File'}</div>
               </div>
             </a>
           ))}
           {(!files || files.length === 0) && (
-            <div className="text-sm text-black/60">No files uploaded.</div>
+            <div className="col-span-full text-center py-8">
+              <div className="text-[#2e2e2e]/40 mb-2">
+                <svg className="w-12 h-12 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                </svg>
+              </div>
+              <p className="text-sm text-[#2e2e2e]/60">No files uploaded yet</p>
+              <p className="text-xs text-[#2e2e2e]/40 mt-1">Click "Choose Files" to upload documents</p>
+            </div>
           )}
         </div>
       </CenterModal>
@@ -1297,6 +1767,114 @@ export default function ProjectDetailPage() {
           projectAddress={project.address || ''}
           projectId={project.id}
         />
+      )}
+
+      {/* Delete Confirmation Modal */}
+      <CenterModal
+        open={showDeleteConfirm}
+        onClose={() => !isDeleting && setShowDeleteConfirm(false)}
+        title="Delete Project?"
+        maxWidth="max-w-md"
+      >
+        <div className="space-y-4">
+          <div className="flex items-center gap-3 p-4 bg-red-50 border border-red-100 rounded-xl">
+            <div className="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center flex-shrink-0">
+              <svg className="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+            </div>
+            <div>
+              <h3 className="text-sm font-semibold text-red-900">Warning: This action cannot be undone</h3>
+              <p className="text-xs text-red-700 mt-1">
+                All project data, files, and chat history will be permanently deleted.
+              </p>
+            </div>
+          </div>
+
+          <div className="p-4 bg-gray-50 rounded-xl">
+            <p className="text-sm text-[#2e2e2e] font-medium mb-1">Project Details:</p>
+            <div className="text-xs text-[#2e2e2e]/70 space-y-1">
+              <div><span className="font-medium">Name:</span> {project.name}</div>
+              <div><span className="font-medium">Code:</span> {projectCode}</div>
+              {project.address && <div><span className="font-medium">Address:</span> {project.address}</div>}
+            </div>
+          </div>
+
+          <div className="flex gap-3 pt-2">
+            <Button
+              onClick={handleDeleteProject}
+              disabled={isDeleting}
+              className="flex-1 bg-red-600 text-white hover:bg-red-700 disabled:opacity-50 flex items-center justify-center gap-2"
+            >
+              {isDeleting ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  <span>Deleting...</span>
+                </>
+              ) : (
+                <>
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                  </svg>
+                  <span>Yes, Delete Project</span>
+                </>
+              )}
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => setShowDeleteConfirm(false)}
+              disabled={isDeleting}
+              className="flex-1"
+            >
+              Cancel
+            </Button>
+          </div>
+        </div>
+      </CenterModal>
+
+      {/* Request Change Modal */}
+      {requestChangeModal?.open && (
+        <CenterModal
+          open={requestChangeModal.open}
+          onClose={() => {
+            setRequestChangeModal(null);
+            setChangeNotes("");
+          }}
+        >
+          <div className="p-6">
+            <h3 className="text-xl font-semibold text-[#2e2e2e] mb-4">
+              Request Changes
+            </h3>
+            <p className="text-sm text-gray-600 mb-4">
+              Please describe what changes you'd like to see in this {requestChangeModal.type === 'renders' ? 'render' : 'screenshot'} for {requestChangeModal.area}:
+            </p>
+            <textarea
+              value={changeNotes}
+              onChange={(e) => setChangeNotes(e.target.value)}
+              placeholder="Describe the changes you want..."
+              className="w-full h-32 px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#d96857]/50 resize-none text-sm"
+              autoFocus
+            />
+            <div className="flex gap-3 mt-4">
+              <button
+                onClick={() => {
+                  setRequestChangeModal(null);
+                  setChangeNotes("");
+                }}
+                className="flex-1 px-4 py-2.5 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition-colors font-medium"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={submitRequestChange}
+                disabled={!changeNotes.trim()}
+                className="flex-1 px-4 py-2.5 bg-[#d96857] text-white rounded-xl hover:bg-[#c85745] transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Submit Request
+              </button>
+            </div>
+          </div>
+        </CenterModal>
       )}
     </AuthGuard>
   );

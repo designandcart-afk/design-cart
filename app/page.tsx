@@ -42,7 +42,8 @@ export default function DashboardPage() {
     scope: string;
     address: string;
     notes: string;
-    area: string;
+    areaInput: string;
+    areas: string[];
     files: File[];
     uploading: boolean;
   }>({
@@ -50,7 +51,8 @@ export default function DashboardPage() {
     scope: "",
     address: "",
     notes: "",
-    area: "",
+    areaInput: "",
+    areas: [],
     files: [],
     uploading: false,
   });
@@ -70,7 +72,6 @@ export default function DashboardPage() {
     if (!form.name) return;
     setForm((f) => ({ ...f, uploading: true }));
 
-    // DEMO "upload" (blob URLs). Swap with real Drive uploader later.
     let uploads: DemoUpload[] = [];
     if (form.files.length) {
       const result = await uploadFiles(form.files.map((file) => ({ file })));
@@ -83,28 +84,34 @@ export default function DashboardPage() {
       }));
     }
 
-    const p: Omit<DemoProject, 'id' | 'createdAt'> = {
+    // Add project via context (now async, handles API)
+    const created = await addProject({
       name: form.name.trim(),
       scope: form.scope.trim() || "wip",
       address: form.address.trim() || undefined,
       notes: form.notes.trim() || undefined,
-      // Support comma-separated areas. Keep legacy `area` as first area if present.
-      areas: form.area ? form.area.split(',').map(a => a.trim()).filter(Boolean) : undefined,
-      area: form.area.trim() || undefined,
+      areas: form.areas.length ? form.areas : undefined,
+      area: form.areas[0] || undefined,
       status: "wip",
       uploads,
-    };
-
-    addProject(p);
-    setForm({
-      name: "",
-      scope: "",
-      address: "",
-      notes: "",
-      area: "",
-      files: [],
-      uploading: false,
     });
+
+    if (created) {
+      setForm({
+        name: "",
+        scope: "",
+        address: "",
+        notes: "",
+        areaInput: "",
+        areas: [],
+        files: [],
+        uploading: false,
+      });
+    } else {
+      setForm((f) => ({ ...f, uploading: false }));
+      // Optionally show error to user
+      // alert('Failed to create project.');
+    }
   }
 
   const inputBase =
@@ -133,7 +140,7 @@ export default function DashboardPage() {
           <button
             key={it}
             type="button"
-            onClick={() => onPick(it)}
+            onMouseDown={() => onPick(it)}
             className="text-sm text-[#2e2e2e] bg-[#f9f8f7] border border-black/10 rounded-full px-3 py-1 hover:border-[#d96857]/40"
           >
             {it}
@@ -183,6 +190,7 @@ export default function DashboardPage() {
               placeholder="Project name"
               value={form.name}
               onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
+              autoComplete="new-project-name"
             />
 
             {/* Scope of Work — free type with soft suggestion chips */}
@@ -203,21 +211,53 @@ export default function DashboardPage() {
               />
             </div>
 
-            {/* Area — free type with soft suggestion chips */}
+            {/* Area — multi-entry chips with suggestions and custom input */}
             <div>
+              <div className="flex flex-wrap gap-2 mb-2">
+                {form.areas.map((area, idx) => (
+                  <span key={area + idx} className="flex items-center bg-[#f9f8f7] border border-black/10 rounded-full px-3 py-1 text-sm">
+                    {area}
+                    <button
+                      type="button"
+                      className="ml-2 text-[#d96857] hover:text-red-500"
+                      onClick={() => setForm(f => ({ ...f, areas: f.areas.filter((_, i) => i !== idx) }))}
+                      aria-label={`Remove area ${area}`}
+                    >
+                      ×
+                    </button>
+                  </span>
+                ))}
+              </div>
               <input
                 className={inputBase}
-                placeholder="Area (type or pick)"
-                value={form.area}
-                onChange={(e) => setForm((f) => ({ ...f, area: e.target.value }))}
+                placeholder="Add area (type or pick, press Enter)"
+                value={form.areaInput}
+                onChange={e => setForm(f => ({ ...f, areaInput: e.target.value }))}
                 onFocus={() => setAreaFocus(true)}
                 onBlur={() => setTimeout(() => setAreaFocus(false), 100)}
+                onKeyDown={e => {
+                  if ((e.key === 'Enter' || e.key === ',') && form.areaInput.trim()) {
+                    e.preventDefault();
+                    const newArea = form.areaInput.trim();
+                    if (!form.areas.includes(newArea)) {
+                      setForm(f => ({ ...f, areas: [...f.areas, newArea], areaInput: '' }));
+                    } else {
+                      setForm(f => ({ ...f, areaInput: '' }));
+                    }
+                  }
+                }}
               />
               <SuggestChips
-                items={AREAS}
-                filter={form.area}
+                items={AREAS.filter(a => !form.areas.includes(a))}
+                filter={form.areaInput}
                 visible={areaFocus}
-                onPick={(v) => setForm((f) => ({ ...f, area: v }))}
+                onPick={v => {
+                  if (!form.areas.includes(v)) {
+                    setForm(f => ({ ...f, areas: [...f.areas, v], areaInput: '' }));
+                  } else {
+                    setForm(f => ({ ...f, areaInput: '' }));
+                  }
+                }}
               />
             </div>
 
@@ -226,6 +266,7 @@ export default function DashboardPage() {
               placeholder="Address"
               value={form.address}
               onChange={(e) => setForm((f) => ({ ...f, address: e.target.value }))}
+              autoComplete="new-project-address"
             />
 
             <textarea

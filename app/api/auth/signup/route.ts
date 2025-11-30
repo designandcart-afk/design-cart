@@ -1,6 +1,6 @@
 // API route for user sign up
 import { NextRequest, NextResponse } from 'next/server';
-import { authService } from '@/lib/auth/authService';
+import { supabase } from '@/lib/supabase';
 
 export async function POST(request: NextRequest) {
   try {
@@ -31,33 +31,31 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const result = await authService.signUp({ email, name, password });
-
-    // Set HTTP-only cookie for token
-    const response = NextResponse.json({
-      user: result.user,
-      message: 'Account created successfully'
+    // Use Supabase Auth to sign up and trigger email confirmation
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: { name },
+        emailRedirectTo: process.env.NEXT_PUBLIC_APP_URL
+          ? `${process.env.NEXT_PUBLIC_APP_URL}/verify-email`
+          : 'http://localhost:4000/verify-email',
+      },
     });
 
-    response.cookies.set('auth-token', result.token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: 7 * 24 * 60 * 60, // 7 days
-      path: '/',
-    });
-
-    return response;
-  } catch (error) {
-    console.error('Sign up error:', error);
-    
-    if (error instanceof Error && error.message === 'User already exists with this email') {
+    if (error) {
       return NextResponse.json(
-        { error: 'An account with this email already exists' },
-        { status: 409 }
+        { error: error.message },
+        { status: 400 }
       );
     }
 
+    return NextResponse.json({
+      user: data.user,
+      message: 'Account created successfully. Please check your email to verify your account.'
+    });
+  } catch (error) {
+    console.error('Sign up error:', error);
     return NextResponse.json(
       { error: 'Failed to create account. Please try again.' },
       { status: 500 }

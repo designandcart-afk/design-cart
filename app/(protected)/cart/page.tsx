@@ -36,18 +36,21 @@ export default function CartPage() {
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [collapsedProjects, setCollapsedProjects] = useState<Set<string>>(new Set());
+  const [processingPayment, setProcessingPayment] = useState(false);
 
-  // ✅ Load demo data or localStorage
+  // ✅ Load data from localStorage and filter out demo cart items
   useEffect(() => {
     const existing = localStorage.getItem(CART_KEY);
     let loadedLines: CartLine[] = [];
     
     if (!existing || existing === "[]") {
-      // preload demo cart only if empty
-      localStorage.setItem(CART_KEY, JSON.stringify(demoCart));
-      loadedLines = demoCart;
+      loadedLines = [];
     } else {
       loadedLines = JSON.parse(existing);
+      // Filter out demo cart items (line_1, line_2, line_3)
+      loadedLines = loadedLines.filter((l: CartLine) => 
+        !['line_1', 'line_2', 'line_3'].includes(l.id)
+      );
     }
     
     setLines(loadedLines);
@@ -79,8 +82,11 @@ export default function CartPage() {
   }
 
   const view = useMemo(() => {
-    return lines.map((l) => {
-      const product = demoProductsAll.find((p) => p.id === l.productId);
+    return lines.map((l: any) => {
+      // Use stored product data from cart item, or fallback to demoProductsAll
+      const product = l.price && l.title && l.imageUrl 
+        ? { id: l.productId, price: l.price, title: l.title, imageUrl: l.imageUrl }
+        : demoProductsAll.find((p) => p.id === l.productId);
       // Try to find project from context first, then fallback to demo projects
       const project = l.projectId
         ? (projects.find((p) => p.id === l.projectId) || demoProjects.find((p) => p.id === l.projectId))
@@ -117,25 +123,78 @@ export default function CartPage() {
     }, 0);
   }, [view, selectedIds]);
 
-  // ✅ Place Order
+  // ✅ Place Order with Razorpay
   function placeOrder() {
     if (selectedIds.length === 0) return;
-    const orders = JSON.parse(localStorage.getItem(ORDERS_KEY) || "[]");
-    // Only include selected items in the order
+    
+    setProcessingPayment(true);
+    
+    // Load Razorpay script
+    const script = document.createElement('script');
+    script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+    script.async = true;
+    script.onload = () => initializeRazorpay();
+    script.onerror = () => {
+      setProcessingPayment(false);
+      alert('Failed to load Razorpay. Please try again.');
+    };
+    document.body.appendChild(script);
+  }
+
+  function initializeRazorpay() {
     const selectedItems = lines.filter(l => selectedIds.includes(l.id));
+    
+    const options = {
+      key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || 'rzp_test_YOUR_KEY_ID', // Replace with your Razorpay key
+      amount: subtotal * 100, // Amount in paise (multiply by 100)
+      currency: 'INR',
+      name: 'Design & Cart',
+      description: `Order for ${selectedItems.length} item${selectedItems.length > 1 ? 's' : ''}`,
+      image: '/logo.png', // Your logo URL
+      handler: function (response: any) {
+        // Payment successful
+        handlePaymentSuccess(response, selectedItems);
+      },
+      prefill: {
+        name: 'Customer Name',
+        email: 'customer@example.com',
+        contact: '9999999999'
+      },
+      theme: {
+        color: '#d96857'
+      },
+      modal: {
+        ondismiss: function() {
+          setProcessingPayment(false);
+        }
+      }
+    };
+
+    const rzp = new (window as any).Razorpay(options);
+    rzp.open();
+  }
+
+  function handlePaymentSuccess(response: any, selectedItems: CartLine[]) {
+    // Save order with payment details
+    const orders = JSON.parse(localStorage.getItem(ORDERS_KEY) || '[]');
     const order = {
       id: `ord_${Date.now()}`,
       items: selectedItems,
       total: subtotal,
-      status: "Placed",
+      status: 'Paid',
+      paymentId: response.razorpay_payment_id,
       ts: Date.now(),
     };
     localStorage.setItem(ORDERS_KEY, JSON.stringify([order, ...orders]));
+    
     // Remove selected items from cart
     save(lines.filter(l => !selectedIds.includes(l.id)));
+    
     // Clear selection
     setSelectedIds([]);
-    alert("Order placed (demo). You can review it on the Orders page.");
+    setProcessingPayment(false);
+    
+    alert(`Payment successful! Payment ID: ${response.razorpay_payment_id}\nYou can review your order on the Orders page.`);
   }
 
   return (
@@ -417,10 +476,11 @@ export default function CartPage() {
                 </div>
 
                 <Button
-                  onClick={placeOrder} disabled={selectedIds.length===0}
-                  className="mt-4 w-full bg-[#d96857] text-white rounded-2xl py-2 font-medium hover:opacity-95"
+                  onClick={placeOrder} 
+                  disabled={selectedIds.length === 0 || processingPayment}
+                  className="mt-4 w-full bg-[#d96857] text-white rounded-2xl py-2 font-medium hover:opacity-95 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  Place Order
+                  {processingPayment ? 'Processing...' : 'Proceed to Payment'}
                 </Button>
 
                 <p className="mt-2 text-[11px] text-zinc-500 text-center">

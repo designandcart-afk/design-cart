@@ -183,6 +183,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           data: {
             full_name: name.trim(),
           },
+          emailRedirectTo: 'http://localhost:4000/verify-email',
         },
       });
 

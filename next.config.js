@@ -7,10 +7,9 @@ const nextConfig = {
     ],
   },
   // Enable edge runtime for better performance
-  experimental: {
-    runtime: 'edge',
-    serverActions: true,
-  },
+    experimental: {
+      serverActions: {},
+    },
   // Add rewrites for clean URLs
   async rewrites() {
     return [

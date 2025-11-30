@@ -42,7 +42,7 @@ class EmailService {
 
   async sendVerificationEmail(data: VerificationEmailData): Promise<void> {
     const { to, name, verificationToken } = data;
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:4000';
     const verificationUrl = `${appUrl}/verify-email?token=${verificationToken}`;
 
     const htmlContent = `
@@ -228,7 +228,7 @@ This reset link will expire in 1 hour. If you didn't request a password reset, y
             </ul>
             
             <div style="text-align: center; margin: 40px 0;">
-              <a href="${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}" 
+              <a href="${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:4000'}" 
                  style="background-color: #d96857; color: white; padding: 15px 30px; text-decoration: none; border-radius: 25px; font-weight: bold; display: inline-block;">
                 Start Shopping
               </a>

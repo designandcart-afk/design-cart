@@ -6,7 +6,7 @@ Your application is now configured to accept **real user registrations and login
 ## 🚀 For New Users - Registration Process
 
 ### Step 1: User Signs Up
-1. **URL**: http://localhost:3000/signup
+1. **URL**: http://localhost:4000/signup
 2. **User provides**:
    - Full name
    - Valid email address
@@ -20,7 +20,7 @@ Your application is now configured to accept **real user registrations and login
 4. **Account activated** and ready for login
 
 ### Step 3: User Signs In
-1. **URL**: http://localhost:3000/login
+1. **URL**: http://localhost:4000/login
 2. **User enters** verified email and password
 3. **Automatic redirect** to dashboard/home page
 
@@ -28,16 +28,16 @@ Your application is now configured to accept **real user registrations and login
 
 ### **CRITICAL: Complete These Steps First**
 
-1. **Go to Supabase Dashboard**: https://supabase.com/dashboard/project/jklysspmuaiurvcluokx
+1. **Go to Supabase Dashboard**: https://supabase.com/dashboard/project/ggykwlqbtyznovdvzopt
 
 2. **Authentication Settings**:
    ```
    Navigation: Authentication → Settings
    
-   ✅ Site URL: http://localhost:3000
+   ✅ Site URL: http://localhost:4000
    ✅ Redirect URLs:
-      - http://localhost:3000/auth/callback
-      - http://localhost:3000/auth/callback?type=recovery
+      - http://localhost:4000/auth/callback
+      - http://localhost:4000/auth/callback?type=recovery
    ✅ Enable email confirmations: ON
    ✅ Enable secure email change: ON
    ```
@@ -55,7 +55,7 @@ Your application is now configured to accept **real user registrations and login
 
 ### Test Scenario 1: Complete Registration Flow
 ```bash
-1. Visit: http://localhost:3000/signup
+1. Visit: http://localhost:4000/signup
 2. Fill form with real email address
 3. Submit registration
 4. Check email inbox for verification link
@@ -66,7 +66,7 @@ Your application is now configured to accept **real user registrations and login
 
 ### Test Scenario 2: Demo User (Still Available)
 ```bash
-1. Visit: http://localhost:3000/login
+1. Visit: http://localhost:4000/login
 2. Click "Explore Demo Account"
 3. Automatically logs in as demo user
 ```
@@ -128,7 +128,7 @@ Your application is now configured to accept **real user registrations and login
 ### Quick Fixes:
 ```bash
 # Check server is running
-curl http://localhost:3000
+curl http://localhost:4000
 
 # Check Supabase connection
 node -e "console.log('SUPABASE_URL:', process.env.NEXT_PUBLIC_SUPABASE_URL)"
@@ -139,10 +139,10 @@ npm run dev -- -p 3000
 
 ## 📊 Current Configuration
 
-- ✅ **Supabase Project**: jklysspmuaiurvcluokx
+- ✅ **Supabase Project**: ggykwlqbtyznovdvzopt
 - ✅ **Real Authentication**: Enabled
 - ✅ **Demo Mode**: Available as fallback
 - ✅ **Email Verification**: Required
-- ✅ **Local Development**: http://localhost:3000
+- ✅ **Local Development**: http://localhost:4000
 
 Your app is now ready to accept and manage real user registrations! 🎉
