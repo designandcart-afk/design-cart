@@ -200,72 +200,7 @@ export default function ProjectDetailPage() {
     setChangeNotes("");
   };
 
-  // Get status buttons for renders/screenshots
-  const getStatusButtons = (area: string, type: 'renders' | 'screenshots', index: number) => {
-    // Check Supabase data first for real projects
-    if (!isDemoProject) {
-      const items = type === 'renders' ? rendersForArea(area) : screenshotsFor(area);
-      const item = items[index];
-      if (item?.approval_status) {
-        if (item.approval_status === 'approved') {
-          return (
-            <div className="bg-green-500 text-white px-4 py-2 rounded-full text-sm font-medium shadow-lg">
-              ✓ Approved
-            </div>
-          );
-        }
-        if (item.approval_status === 'change_requested') {
-          return (
-            <div className="bg-orange-500 text-white px-4 py-2 rounded-full text-sm font-medium shadow-lg">
-              🔄 Change Requested
-            </div>
-          );
-        }
-      }
-    }
-    
-    // Fallback to local state for demo projects
-    const status = approvalStatus[area]?.[type]?.[index];
-    
-    if (status === 'approved') {
-      return (
-        <div className="bg-green-500 text-white px-4 py-2 rounded-full text-sm font-medium shadow-lg">
-          ✓ Approved
-        </div>
-      );
-    }
-    
-    if (status === 'requested-change') {
-      return (
-        <div className="bg-orange-500 text-white px-4 py-2 rounded-full text-sm font-medium shadow-lg">
-          🔄 Change Requested
-        </div>
-      );
-    }
-    
-    return (
-      <div className="flex gap-2">
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            handleApprove(area, type, index);
-          }}
-          className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-full text-sm font-medium transition-colors shadow-lg"
-        >
-          ✓ Approve
-        </button>
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            handleRequestChange(area, type, index);
-          }}
-          className="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-full text-sm font-medium transition-colors shadow-lg"
-        >
-          🔄 Request Change
-        </button>
-      </div>
-    );
-  };
+  // ...existing code...
 
   // Listen for changes to project products in localStorage
   useEffect(() => {
@@ -479,6 +414,85 @@ export default function ProjectDetailPage() {
       : (isDemoProject ? (derivedFromLinks.length ? derivedFromLinks : (derivedFromRenders.length ? derivedFromRenders : [])) : (derivedFromScreenshots.length ? derivedFromScreenshots : []));
 
   // Screenshots from Supabase for real projects, mock for demo
+  // ...existing code...
+
+  // Renders for area
+  const rendersForArea = (area: string) => {
+    const filtered = allRendersForProject.filter((r) => r.area === area);
+    // Map database field to UI field for non-demo projects
+    if (!isDemoProject) {
+      return filtered.map((r) => ({
+        ...r,
+        imageUrl: r.image_url,
+      }));
+    }
+    return filtered;
+  };
+
+  // Get status buttons for renders/screenshots
+  const getStatusButtons = (area: string, type: 'renders' | 'screenshots', index: number) => {
+    // Check Supabase data first for real projects
+    if (!isDemoProject) {
+      const items = type === 'renders' ? rendersForArea(area) : screenshotsFor(area);
+      const item = items[index];
+      if (item?.approval_status) {
+        if (item.approval_status === 'approved') {
+          return (
+            <div className="bg-green-500 text-white px-4 py-2 rounded-full text-sm font-medium shadow-lg">
+              ✓ Approved
+            </div>
+          );
+        }
+        if (item.approval_status === 'change_requested') {
+          return (
+            <div className="bg-orange-500 text-white px-4 py-2 rounded-full text-sm font-medium shadow-lg">
+              🔄 Change Requested
+            </div>
+          );
+        }
+      }
+    }
+    // Fallback to local state for demo projects
+    const status = approvalStatus[area]?.[type]?.[index];
+    if (status === 'approved') {
+      return (
+        <div className="bg-green-500 text-white px-4 py-2 rounded-full text-sm font-medium shadow-lg">
+          ✓ Approved
+        </div>
+      );
+    }
+    if (status === 'requested-change') {
+      return (
+        <div className="bg-orange-500 text-white px-4 py-2 rounded-full text-sm font-medium shadow-lg">
+          🔄 Change Requested
+        </div>
+      );
+    }
+    return (
+      <div className="flex gap-2">
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            handleApprove(area, type, index);
+          }}
+          className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-full text-sm font-medium transition-colors shadow-lg"
+        >
+          ✓ Approve
+        </button>
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            handleRequestChange(area, type, index);
+          }}
+          className="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-full text-sm font-medium transition-colors shadow-lg"
+        >
+          🔄 Request Change
+        </button>
+      </div>
+    );
+  };
+
+  // Screenshots from Supabase for real projects, mock for demo
   const screenshotsFor = (area: string) => {
     if (isDemoProject) {
       return [1, 2].map((n) => ({
@@ -494,18 +508,7 @@ export default function ProjectDetailPage() {
       }));
   };
 
-  // Renders for area
-  const rendersForArea = (area: string) => {
-    const filtered = allRendersForProject.filter((r) => r.area === area);
-    // Map database field to UI field for non-demo projects
-    if (!isDemoProject) {
-      return filtered.map((r) => ({
-        ...r,
-        imageUrl: r.image_url,
-      }));
-    }
-    return filtered;
-  };
+  // ...existing code...
 
   const productsFor = (area: string) => {
     if (isDemoProject) {
