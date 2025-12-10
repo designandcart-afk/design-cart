@@ -1,13 +1,15 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, Suspense } from 'react';
 import { useAuth } from '@/lib/auth/authContext';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { Lock, Mail, Eye, EyeOff, ArrowLeft, Loader2 } from 'lucide-react';
 import { Button } from '@/components/UI';
 
-export default function LoginPage() {
+export const dynamic = 'force-dynamic';
+
+function LoginForm() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -16,7 +18,7 @@ export default function LoginPage() {
   const { signIn, isDemo, switchToDemo } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const returnTo = searchParams.get('returnTo') || '/';
+  const returnTo = searchParams?.get('returnTo') || '/';
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -194,5 +196,17 @@ export default function LoginPage() {
         </div>
       </div>
     </main>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-[#f2f0ed] flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-[#d96857]" />
+      </div>
+    }>
+      <LoginForm />
+    </Suspense>
   );
 }

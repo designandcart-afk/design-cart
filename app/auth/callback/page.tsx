@@ -1,11 +1,11 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { Loader2, CheckCircle, XCircle } from 'lucide-react';
 
-export default function AuthCallbackPage() {
+function AuthCallback() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
@@ -14,10 +14,10 @@ export default function AuthCallbackPage() {
   useEffect(() => {
     const handleAuthCallback = async () => {
       try {
-        const code = searchParams.get('code');
-        const type = searchParams.get('type');
-        const error = searchParams.get('error');
-        const errorDescription = searchParams.get('error_description');
+        const code = searchParams?.get('code');
+        const type = searchParams?.get('type');
+        const error = searchParams?.get('error');
+        const errorDescription = searchParams?.get('error_description');
 
         // Check for errors in URL
         if (error) {
@@ -130,5 +130,19 @@ export default function AuthCallbackPage() {
         </div>
       </div>
     </main>
+  );
+}
+
+export default function AuthCallbackPage() {
+  return (
+    <Suspense fallback={
+      <main className="min-h-screen bg-[#f2f0ed] flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="w-8 h-8 animate-spin text-[#d96857] mx-auto" />
+        </div>
+      </main>
+    }>
+      <AuthCallback />
+    </Suspense>
   );
 }

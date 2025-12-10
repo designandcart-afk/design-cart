@@ -1,12 +1,12 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { Lock, Eye, EyeOff, ArrowLeft, Loader2 } from 'lucide-react';
 import { Button } from '@/components/UI';
 
-export default function NewPasswordPage() {
+function NewPasswordForm() {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -19,7 +19,7 @@ export default function NewPasswordPage() {
   const searchParams = useSearchParams();
 
   useEffect(() => {
-    const tokenParam = searchParams.get('token');
+    const tokenParam = searchParams?.get('token');
     if (tokenParam) {
       setToken(tokenParam);
     } else {
@@ -257,5 +257,17 @@ export default function NewPasswordPage() {
         </div>
       </div>
     </main>
+  );
+}
+
+export default function NewPasswordPage() {
+  return (
+    <Suspense fallback={
+      <main className="min-h-screen bg-[#f2f0ed] flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-[#d96857]" />
+      </main>
+    }>
+      <NewPasswordForm />
+    </Suspense>
   );
 }
