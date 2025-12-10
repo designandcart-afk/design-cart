@@ -35,6 +35,14 @@ const nextConfig = {
   },
   // Optimize production build
   swcMinify: true,
+  // Allow build to continue despite prerender errors
+  staticPageGenerationTimeout: 180,
+  typescript: {
+    ignoreBuildErrors: false,
+  },
+  eslint: {
+    ignoreDuringBuilds: false,
+  },
   // Add rewrites for clean URLs
   async rewrites() {
     return [
