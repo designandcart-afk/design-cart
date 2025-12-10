@@ -13,7 +13,7 @@ export async function POST(req: NextRequest) {
 
     console.log('Verifying payment for orders:', dbOrderIds);
 
-    // Get authorization header
+    // Get authorization header for user verification
     const authHeader = req.headers.get('authorization');
     
     if (!authHeader) {
@@ -24,11 +24,11 @@ export async function POST(req: NextRequest) {
       );
     }
     
-    // Create Supabase client with auth
+    // Create Supabase client with user's auth token for verification
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-    const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
     
-    const supabase = createClient(supabaseUrl, supabaseKey, {
+    const supabaseAuth = createClient(supabaseUrl, supabaseAnonKey, {
       global: {
         headers: {
           Authorization: authHeader,
@@ -37,7 +37,7 @@ export async function POST(req: NextRequest) {
     });
 
     // Verify the user is authenticated
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    const { data: { user }, error: userError } = await supabaseAuth.auth.getUser();
     
     if (userError || !user) {
       console.error('Auth error:', userError);
@@ -48,6 +48,24 @@ export async function POST(req: NextRequest) {
     }
 
     console.log('Authenticated user:', user.id);
+
+    // Create admin Supabase client with service role key (bypasses RLS)
+    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+    
+    if (!supabaseServiceKey) {
+      console.error('SUPABASE_SERVICE_ROLE_KEY not configured');
+      return NextResponse.json(
+        { error: 'Server configuration error' },
+        { status: 500 }
+      );
+    }
+    
+    const supabase = createClient(supabaseUrl, supabaseServiceKey, {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false,
+      },
+    });
 
     // Verify signature
     const generated_signature = crypto
