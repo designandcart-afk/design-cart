@@ -34,6 +34,13 @@ export default function RootLayout({
               {children}
             </div>
           </main>
+          <footer className="container mx-auto px-4 sm:px-6 lg:px-8 py-6 max-w-7xl">
+            <div className="border-t border-zinc-300 pt-6">
+              <p className="text-center text-xs text-zinc-500">
+                © 2025 DESYNKART TECHNOLOGIES PRIVATE LIMITED
+              </p>
+            </div>
+          </footer>
         </Providers>
       </body>
     </html>
