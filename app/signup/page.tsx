@@ -153,14 +153,6 @@ export default function SignUpPage() {
             <p className="text-[#2e2e2e]/70">
               Join Design&Cart to start your design journey
             </p>
-            
-            {/* Real Auth Notice */}
-            <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-lg">
-              <p className="text-sm text-green-700">
-                <strong>Real Authentication:</strong> Create your account with a valid email address. 
-                You'll receive a verification email to activate your account.
-              </p>
-            </div>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
