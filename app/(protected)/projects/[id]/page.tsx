@@ -460,6 +460,7 @@ export default function ProjectDetailPage() {
   // Area management
   const [addingArea, setAddingArea] = useState(false);
   const [newAreaName, setNewAreaName] = useState("");
+  const [deletingArea, setDeletingArea] = useState<string | null>(null);
 
   // Delete confirmation
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -470,6 +471,7 @@ export default function ProjectDetailPage() {
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [driveLink, setDriveLink] = useState('');
   const [savingDriveLink, setSavingDriveLink] = useState(false);
+  const [deletingFile, setDeletingFile] = useState<string | null>(null);
 
   // Request change modal state
   const [requestChangeModal, setRequestChangeModal] = useState<{
@@ -1219,6 +1221,47 @@ export default function ProjectDetailPage() {
     setAddingArea(false);
   };
 
+  const handleDeleteArea = async (areaName: string) => {
+    if (!areaName) return;
+
+    const currentAreas = project.areas || (project.area ? [project.area] : []);
+    const updatedAreas = currentAreas.filter(a => a !== areaName);
+
+    // Update local context first for immediate UI feedback
+    updateProject(project.id, {
+      areas: updatedAreas
+    });
+
+    // Update Supabase projects table with new areas array
+    if (!isDemoProject) {
+      try {
+        const { error: projectError } = await supabase
+          .from('projects')
+          .update({ areas: updatedAreas })
+          .eq('id', project.id);
+
+        if (projectError) {
+          console.error('Error updating project areas in Supabase:', projectError);
+        }
+
+        // Also delete from project_areas table
+        const { error: areaError } = await supabase
+          .from('project_areas')
+          .delete()
+          .eq('project_id', project.id)
+          .eq('area_name', areaName);
+
+        if (areaError) {
+          console.error('Error deleting project area from Supabase:', areaError);
+        }
+      } catch (error) {
+        console.error('Error deleting area:', error);
+      }
+    }
+
+    setDeletingArea(null);
+  };
+
   const handleMeetingApproval = async (meetingId: string, status: 'approved' | 'changes_needed', feedback?: string) => {
     try {
       // Get meeting details before updating
@@ -1365,6 +1408,33 @@ export default function ProjectDetailPage() {
       }
     } finally {
       setUploadingFiles(false);
+    }
+  };
+
+  const handleDeleteFile = async (fileId: string) => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      // Delete from database
+      const { error } = await supabase
+        .from('project_user_files')
+        .delete()
+        .eq('id', fileId)
+        .eq('user_id', user.id); // Only allow deleting own files
+
+      if (error) {
+        console.error('Error deleting file:', error);
+        setUploadError('Failed to delete file');
+        return;
+      }
+
+      // Update local state
+      setUserFiles(prev => prev.filter(f => f.id !== fileId));
+      setDeletingFile(null);
+    } catch (err) {
+      console.error('Error deleting file:', err);
+      setUploadError('Failed to delete file');
     }
   };
 
@@ -1718,9 +1788,19 @@ export default function ProjectDetailPage() {
                 key={area}
                 className={`relative rounded-2xl p-3 shadow-lg shadow-black/5 border transition ${
                   idx % 2 ? "bg-[#faf8f6]" : "bg-white"
-                } hover:shadow-xl hover:-translate-y-[1px]`}
+                } hover:shadow-xl hover:-translate-y-[1px] group`}
               >
                 <div className="absolute left-0 top-3 bottom-3 w-[3px] bg-[#d96857] rounded-r-full" />
+                
+                {/* Delete button */}
+                <button
+                  onClick={() => setDeletingArea(area)}
+                  className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity p-1.5 hover:bg-red-50 rounded-lg z-10"
+                  title="Delete area"
+                >
+                  <Trash2 className="w-4 h-4 text-red-500" />
+                </button>
+                
                 <div className="mb-2 pl-2">
                   <div className="text-lg font-semibold">{area}</div>
                 </div>
@@ -2602,6 +2682,35 @@ export default function ProjectDetailPage() {
         </div>
       </CenterModal>
 
+      {/* Delete Area Confirmation Modal */}
+      <CenterModal
+        open={!!deletingArea}
+        onClose={() => setDeletingArea(null)}
+        title="Delete Area"
+        size="small"
+      >
+        <div className="p-5">
+          <p className="text-sm text-zinc-600 mb-5">
+            Are you sure you want to delete "<strong>{deletingArea}</strong>"? 
+            This will remove all associated renders, screenshots, and products. This action cannot be undone.
+          </p>
+          <div className="flex gap-3">
+            <Button
+              onClick={() => setDeletingArea(null)}
+              className="flex-1 px-4 py-2 rounded-lg border border-zinc-300 hover:bg-zinc-50"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={() => deletingArea && handleDeleteArea(deletingArea)}
+              className="flex-1 px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700"
+            >
+              Delete Area
+            </Button>
+          </div>
+        </div>
+      </CenterModal>
+
       {/* Project Folder (User Uploaded Files) */}
       <CenterModal
         open={filesOpen}
@@ -2732,13 +2841,29 @@ export default function ProjectDetailPage() {
             const isDriveLink = fileType === 'link' || fileUrl?.includes('drive.google.com');
             
             return (
-            <a
+            <div
               key={f.id}
-              href={fileUrl}
-              target="_blank"
-              rel="noreferrer"
-              className="group relative bg-white border-2 border-zinc-200 rounded-2xl hover:border-[#d96857] hover:shadow-xl hover:shadow-[#d96857]/10 transition-all duration-200 overflow-hidden cursor-pointer"
+              className="group relative bg-white border-2 border-zinc-200 rounded-2xl hover:border-[#d96857] hover:shadow-xl hover:shadow-[#d96857]/10 transition-all duration-200 overflow-hidden"
             >
+              {/* Delete button */}
+              <button
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setDeletingFile(f.id);
+                }}
+                className="absolute top-2 left-2 z-10 opacity-0 group-hover:opacity-100 transition-opacity p-1.5 bg-red-500 hover:bg-red-600 rounded-lg"
+                title="Delete file"
+              >
+                <Trash2 className="w-3 h-3 text-white" />
+              </button>
+
+              <a
+                href={fileUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="block cursor-pointer"
+              >
               {/* Thumbnail/Icon Area */}
               <div className="aspect-square bg-gradient-to-br from-zinc-50 to-zinc-100 flex items-center justify-center relative overflow-hidden">
                 {isDriveLink ? (
@@ -2806,6 +2931,7 @@ export default function ProjectDetailPage() {
                 </p>
               </div>
             </a>
+            </div>
             );
           })}
           
@@ -2821,6 +2947,34 @@ export default function ProjectDetailPage() {
             </div>
           )}
         </div>
+        </div>
+      </CenterModal>
+
+      {/* Delete File Confirmation Modal */}
+      <CenterModal
+        open={!!deletingFile}
+        onClose={() => setDeletingFile(null)}
+        title="Delete File"
+        size="small"
+      >
+        <div className="p-5">
+          <p className="text-sm text-zinc-600 mb-5">
+            Are you sure you want to delete this file? This action cannot be undone.
+          </p>
+          <div className="flex gap-3">
+            <Button
+              onClick={() => setDeletingFile(null)}
+              className="flex-1 px-4 py-2 rounded-lg border border-zinc-300 hover:bg-zinc-50"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={() => deletingFile && handleDeleteFile(deletingFile)}
+              className="flex-1 px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700"
+            >
+              Delete File
+            </Button>
+          </div>
         </div>
       </CenterModal>
 

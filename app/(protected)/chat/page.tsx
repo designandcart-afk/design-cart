@@ -39,6 +39,7 @@ export default function chatPage() {
   const [scheduleMeetingOpen, setScheduleMeetingOpen] = useState(false);
   const [meetingDate, setMeetingDate] = useState("");
   const [meetingTime, setMeetingTime] = useState("");
+  const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
 
   // Load messages
   const loadMessages = useCallback(async (projectId: string) => {
@@ -201,6 +202,33 @@ export default function chatPage() {
     }
   }
 
+  async function deleteMessage(messageId: string) {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      // Delete from database
+      const { error } = await supabase
+        .from('project_chat_messages')
+        .delete()
+        .eq('id', messageId)
+        .eq('user_id', user.id); // Only allow deleting own messages
+
+      if (error) {
+        console.error('Error deleting message:', error);
+        setError('Failed to delete message');
+        return;
+      }
+
+      // Update local state
+      setMessages(prev => prev.filter(m => m.id !== messageId));
+      setDeleteConfirm(null);
+    } catch (err) {
+      console.error('Error deleting message:', err);
+      setError('Failed to delete message');
+    }
+  }
+
   return (
     <main className="min-h-screen bg-white">
       <div className="max-w-7xl mx-auto px-4 py-6 grid grid-cols-1 md:grid-cols-3 gap-5">
@@ -281,9 +309,22 @@ export default function chatPage() {
               return (
                 <div
                   key={m.id}
-                  className={`mb-5 flex ${isClient ? "justify-end" : "justify-start"}`}
+                  className={`mb-5 flex ${isClient ? "justify-end" : "justify-start"} group`}
                 >
-                  <div className="max-w-[70%] space-y-2.5">
+                  <div className="max-w-[70%] space-y-2.5 relative">
+                    {/* Delete button for own messages */}
+                    {isClient && !m.isWelcome && (
+                      <button
+                        onClick={() => setDeleteConfirm(m.id)}
+                        className="absolute -left-8 top-2 opacity-0 group-hover:opacity-100 transition-opacity p-1.5 hover:bg-red-50 rounded-lg"
+                        title="Delete message"
+                      >
+                        <svg className="w-4 h-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                      </button>
+                    )}
+                    
                     {/* Text Message */}
                     {!hasMeeting && m.text && m.text.trim() && (
                       <div
@@ -538,6 +579,34 @@ export default function chatPage() {
                 'Schedule'
               )}
             </button>
+          </div>
+        </div>
+      </CenterModal>
+
+      {/* Delete Confirmation Modal */}
+      <CenterModal
+        open={!!deleteConfirm}
+        onClose={() => setDeleteConfirm(null)}
+        title="Delete Message"
+        size="small"
+      >
+        <div className="p-5">
+          <p className="text-sm text-zinc-600 mb-5">
+            Are you sure you want to delete this message? This action cannot be undone.
+          </p>
+          <div className="flex gap-3">
+            <Button
+              onClick={() => setDeleteConfirm(null)}
+              className="flex-1 px-4 py-2 rounded-lg border border-zinc-300 hover:bg-zinc-50"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={() => deleteConfirm && deleteMessage(deleteConfirm)}
+              className="flex-1 px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700"
+            >
+              Delete
+            </Button>
           </div>
         </div>
       </CenterModal>
