@@ -309,21 +309,21 @@ export default function chatPage() {
               return (
                 <div
                   key={m.id}
-                  className={`mb-5 flex ${isClient ? "justify-end" : "justify-start"} group`}
+                  className={`mb-5 flex items-start gap-2 ${isClient ? "justify-end" : "justify-start"} group`}
                 >
-                  <div className="max-w-[70%] space-y-2.5 relative">
-                    {/* Delete button for own messages */}
-                    {isClient && !m.isWelcome && (
-                      <button
-                        onClick={() => setDeleteConfirm(m.id)}
-                        className="absolute -left-8 top-2 opacity-0 group-hover:opacity-100 transition-opacity p-1.5 hover:bg-red-50 rounded-lg"
-                        title="Delete message"
-                      >
-                        <svg className="w-4 h-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                        </svg>
-                      </button>
-                    )}
+                  {/* Delete button for own messages - shown on left for right-aligned messages */}
+                  {isClient && !m.isWelcome && (
+                    <button
+                      onClick={() => setDeleteConfirm(m.id)}
+                      className="flex-shrink-0 mt-2 opacity-0 group-hover:opacity-100 transition-opacity p-1.5 hover:bg-red-50 rounded-lg"
+                      title="Delete message"
+                    >
+                      <svg className="w-4 h-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                      </svg>
+                    </button>
+                  )}
+                  <div className="max-w-[70%] space-y-2.5">
                     
                     {/* Text Message */}
                     {!hasMeeting && m.text && m.text.trim() && (

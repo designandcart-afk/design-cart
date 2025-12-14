@@ -66,6 +66,7 @@ export default function ProjectDetailPage() {
   const [isLoadingMeetings, setIsLoadingMeetings] = useState(false);
   const [feedbackModal, setFeedbackModal] = useState<{ open: boolean; meetingId: string } | null>(null);
   const [feedbackText, setFeedbackText] = useState("");
+  const [deleteChatMessage, setDeleteChatMessage] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<Record<string, 'renders' | 'screenshots'>>({});
   const [activeSlides, setActiveSlides] = useState<Record<string, { renders: number; screenshots: number }>>({});
   const [approvalStatus, setApprovalStatus] = useState<Record<string, {
@@ -126,6 +127,34 @@ export default function ProjectDetailPage() {
       console.error('❌ Error generating estimates:', error);
     } finally {
       setGeneratingEstimate(false);
+    }
+  };
+
+  // Delete chat message function
+  const handleDeleteChatMessage = async (messageId: string) => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      // Delete from database
+      const { error } = await supabase
+        .from('project_chat_messages')
+        .delete()
+        .eq('id', messageId)
+        .eq('user_id', user.id); // Only allow deleting own messages
+
+      if (error) {
+        console.error('Error deleting message:', error);
+        setChatError('Failed to delete message');
+        return;
+      }
+
+      // Update local state
+      setMessages(prev => prev.filter(m => m.id !== messageId));
+      setDeleteChatMessage(null);
+    } catch (err) {
+      console.error('Error deleting message:', err);
+      setChatError('Failed to delete message');
     }
   };
 
@@ -2092,8 +2121,20 @@ export default function ProjectDetailPage() {
             return (
               <div
                 key={m.id}
-                className={`mb-5 flex ${showOnRight ? "justify-end" : "justify-start"}`}
+                className={`mb-5 flex items-start gap-2 ${showOnRight ? "justify-end" : "justify-start"} group`}
               >
+                {/* Delete button for own messages - shown on left for right-aligned messages */}
+                {isClient && !m.isWelcome && (
+                  <button
+                    onClick={() => setDeleteChatMessage(m.id)}
+                    className="flex-shrink-0 mt-2 opacity-0 group-hover:opacity-100 transition-opacity p-1.5 hover:bg-red-50 rounded-lg"
+                    title="Delete message"
+                  >
+                    <svg className="w-4 h-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                  </button>
+                )}
                 <div className="max-w-[70%] space-y-2.5">
                   {/* Text Message */}
                   {!hasMeeting && m.text && m.text.trim() && (
@@ -2359,6 +2400,35 @@ export default function ProjectDetailPage() {
               ) : (
                 'Schedule'
               )}
+            </Button>
+          </div>
+        </div>
+      </CenterModal>
+
+      {/* Delete Chat Message Confirmation */}
+      <CenterModal
+        open={!!deleteChatMessage}
+        onClose={() => setDeleteChatMessage(null)}
+        title="Delete Message"
+        size="small"
+      >
+        <div className="p-6">
+          <p className="text-sm text-[#2e2e2e]/80 mb-6">
+            Are you sure you want to delete this message? This action cannot be undone.
+          </p>
+          <div className="flex gap-3">
+            <Button
+              onClick={() => setDeleteChatMessage(null)}
+              variant="outline"
+              className="flex-1 px-4 py-2.5 rounded-lg text-sm font-medium border-zinc-300 hover:bg-zinc-50 transition-all"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={() => deleteChatMessage && handleDeleteChatMessage(deleteChatMessage)}
+              className="flex-1 px-4 py-2.5 rounded-lg bg-red-600 text-white hover:bg-red-700 text-sm font-medium transition-all"
+            >
+              Delete Message
             </Button>
           </div>
         </div>
