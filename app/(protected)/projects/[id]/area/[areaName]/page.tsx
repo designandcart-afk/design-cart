@@ -745,20 +745,20 @@ export default function AreaDetailPage() {
         title="Remove Product"
         size="small"
       >
-        <div className="p-5">
-          <p className="text-sm text-zinc-600 mb-5">
+        <div className="p-6">
+          <p className="text-sm text-zinc-600 text-center mb-6 leading-relaxed">
             Are you sure you want to remove this product from <strong>{areaName}</strong>? This action cannot be undone.
           </p>
           <div className="flex gap-3">
             <Button
               onClick={() => setDeletingProduct(null)}
-              className="flex-1 px-4 py-2 rounded-lg border border-zinc-300 hover:bg-zinc-50"
+              className="flex-1 px-4 py-2.5 rounded-xl border border-zinc-300 hover:bg-zinc-50 font-medium transition-all"
             >
               Cancel
             </Button>
             <Button
               onClick={() => deletingProduct && handleDeleteProduct(deletingProduct)}
-              className="flex-1 px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700"
+              className="flex-1 px-4 py-2.5 rounded-xl bg-red-600 text-white hover:bg-red-700 font-medium transition-all"
             >
               Remove Product
             </Button>

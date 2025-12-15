@@ -2454,20 +2454,20 @@ export default function ProjectDetailPage() {
         size="small"
       >
         <div className="p-6">
-          <p className="text-sm text-[#2e2e2e]/80 mb-6">
+          <p className="text-sm text-zinc-600 text-center mb-6 leading-relaxed">
             Are you sure you want to delete this message? This action cannot be undone.
           </p>
           <div className="flex gap-3">
             <Button
               onClick={() => setDeleteChatMessage(null)}
               variant="outline"
-              className="flex-1 px-4 py-2.5 rounded-lg text-sm font-medium border-zinc-300 hover:bg-zinc-50 transition-all"
+              className="flex-1 px-4 py-2.5 rounded-xl text-sm font-medium border-zinc-300 hover:bg-zinc-50 transition-all"
             >
               Cancel
             </Button>
             <Button
               onClick={() => deleteChatMessage && handleDeleteChatMessage(deleteChatMessage)}
-              className="flex-1 px-4 py-2.5 rounded-lg bg-red-600 text-white hover:bg-red-700 text-sm font-medium transition-all"
+              className="flex-1 px-4 py-2.5 rounded-xl bg-red-600 text-white hover:bg-red-700 text-sm font-medium transition-all"
             >
               Delete Message
             </Button>
@@ -2800,21 +2800,21 @@ export default function ProjectDetailPage() {
         title="Delete Area"
         size="small"
       >
-        <div className="p-5">
-          <p className="text-sm text-zinc-600 mb-5">
+        <div className="p-6">
+          <p className="text-sm text-zinc-600 text-center mb-6 leading-relaxed">
             Are you sure you want to delete "<strong>{deletingArea}</strong>"? 
             This will remove all associated renders, screenshots, and products. This action cannot be undone.
           </p>
           <div className="flex gap-3">
             <Button
               onClick={() => setDeletingArea(null)}
-              className="flex-1 px-4 py-2 rounded-lg border border-zinc-300 hover:bg-zinc-50"
+              className="flex-1 px-4 py-2.5 rounded-xl border border-zinc-300 hover:bg-zinc-50 font-medium transition-all"
             >
               Cancel
             </Button>
             <Button
               onClick={() => deletingArea && handleDeleteArea(deletingArea)}
-              className="flex-1 px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700"
+              className="flex-1 px-4 py-2.5 rounded-xl bg-red-600 text-white hover:bg-red-700 font-medium transition-all"
             >
               Delete Area
             </Button>
@@ -3068,20 +3068,20 @@ export default function ProjectDetailPage() {
         title="Delete File"
         size="small"
       >
-        <div className="p-5">
-          <p className="text-sm text-zinc-600 mb-5">
+        <div className="p-6">
+          <p className="text-sm text-zinc-600 text-center mb-6 leading-relaxed">
             Are you sure you want to delete this file? This action cannot be undone.
           </p>
           <div className="flex gap-3">
             <Button
               onClick={() => setDeletingFile(null)}
-              className="flex-1 px-4 py-2 rounded-lg border border-zinc-300 hover:bg-zinc-50"
+              className="flex-1 px-4 py-2.5 rounded-xl border border-zinc-300 hover:bg-zinc-50 font-medium transition-all"
             >
               Cancel
             </Button>
             <Button
               onClick={() => deletingFile && handleDeleteFile(deletingFile)}
-              className="flex-1 px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700"
+              className="flex-1 px-4 py-2.5 rounded-xl bg-red-600 text-white hover:bg-red-700 font-medium transition-all"
             >
               Delete File
             </Button>
@@ -3096,20 +3096,20 @@ export default function ProjectDetailPage() {
         title="Remove Product"
         size="small"
       >
-        <div className="p-5">
-          <p className="text-sm text-zinc-600 mb-5">
+        <div className="p-6">
+          <p className="text-sm text-zinc-600 text-center mb-6 leading-relaxed">
             Are you sure you want to remove this product from <strong>{deletingProduct?.area}</strong>? This action cannot be undone.
           </p>
           <div className="flex gap-3">
             <Button
               onClick={() => setDeletingProduct(null)}
-              className="flex-1 px-4 py-2 rounded-lg border border-zinc-300 hover:bg-zinc-50"
+              className="flex-1 px-4 py-2.5 rounded-xl border border-zinc-300 hover:bg-zinc-50 font-medium transition-all"
             >
               Cancel
             </Button>
             <Button
               onClick={() => deletingProduct && handleDeleteProduct(deletingProduct.productId, deletingProduct.area)}
-              className="flex-1 px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700"
+              className="flex-1 px-4 py-2.5 rounded-xl bg-red-600 text-white hover:bg-red-700 font-medium transition-all"
             >
               Remove Product
             </Button>
@@ -3353,9 +3353,17 @@ export default function ProjectDetailPage() {
 
           <div className="flex gap-3 pt-2">
             <Button
+              variant="outline"
+              onClick={() => setShowDeleteConfirm(false)}
+              disabled={isDeleting}
+              className="flex-1 py-3 rounded-xl font-medium"
+            >
+              Cancel
+            </Button>
+            <Button
               onClick={handleDeleteProject}
               disabled={isDeleting}
-              className="flex-1 bg-red-600 text-white hover:bg-red-700 disabled:opacity-50 flex items-center justify-center gap-2 py-3"
+              className="flex-1 bg-red-600 text-white hover:bg-red-700 disabled:opacity-50 flex items-center justify-center gap-2 py-3 rounded-xl font-medium"
             >
               {isDeleting ? (
                 <>
@@ -3371,13 +3379,7 @@ export default function ProjectDetailPage() {
                 </>
               )}
             </Button>
-            <Button
-              variant="outline"
-              onClick={() => setShowDeleteConfirm(false)}
-              disabled={isDeleting}
-              className="flex-1 py-3"
-            >
-              Cancel
+          </div>
             </Button>
           </div>
         </div>
