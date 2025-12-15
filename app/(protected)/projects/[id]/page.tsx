@@ -2069,17 +2069,6 @@ export default function ProjectDetailPage() {
                         key={p.id}
                         className="flex-shrink-0 group relative"
                       >
-                        {/* Delete button */}
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setDeletingProduct({ productId: p.id, area });
-                          }}
-                          className="absolute -top-2 -right-2 z-20 w-6 h-6 bg-red-500 hover:bg-red-600 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-lg"
-                          title="Remove product"
-                        >
-                          <Trash2 className="w-3 h-3 text-white" />
-                        </button>
                         <div
                           className="relative w-[80px] h-[80px] rounded-lg cursor-pointer"
                           onClick={() => router.push(`/projects/${projectId}/area/${encodeURIComponent(area)}`)}
