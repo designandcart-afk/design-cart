@@ -3,6 +3,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { authService } from '@/lib/auth/authService';
 import { databaseService } from '@/lib/database/databaseService';
 
+// Force dynamic rendering for this route
+export const dynamic = 'force-dynamic';
+
 async function getCurrentUser(request: NextRequest) {
   const token = request.cookies.get('auth-token')?.value;
   if (!token) {

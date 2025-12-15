@@ -3,6 +3,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { databaseService } from '@/lib/database/databaseService';
 
+// Force dynamic rendering for this route
+export const dynamic = 'force-dynamic';
+
 // Supabase client for server-side verification
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
