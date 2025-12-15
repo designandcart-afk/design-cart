@@ -133,7 +133,23 @@ export default function ProjectDetailPage() {
   // Delete chat message function
   const handleDeleteChatMessage = async (messageId: string) => {
     try {
-      // Only update local state (frontend only delete)
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      // Delete from database
+      const { error } = await supabase
+        .from('project_chat_messages')
+        .delete()
+        .eq('id', messageId)
+        .eq('user_id', user.id);
+
+      if (error) {
+        console.error('Error deleting message:', error);
+        setChatError('Failed to delete message');
+        return;
+      }
+
+      // Update local state
       setMessages(prev => prev.filter(m => m.id !== messageId));
       setDeleteChatMessage(null);
     } catch (err) {
@@ -145,7 +161,22 @@ export default function ProjectDetailPage() {
   // Delete product from project
   const handleDeleteProduct = async (productId: string, area: string) => {
     try {
-      // Only delete from localStorage (frontend only delete)
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      // Delete from Supabase
+      const { error: dbError } = await supabase
+        .from('project_products')
+        .delete()
+        .eq('project_id', projectId)
+        .eq('product_id', productId)
+        .eq('area', area);
+
+      if (dbError) {
+        console.error('Error deleting product from database:', dbError);
+      }
+
+      // Delete from localStorage
       const localKey = "dc:projectProducts";
       const localData = JSON.parse(localStorage.getItem(localKey) || "[]");
       const updated = localData.filter(
@@ -1263,10 +1294,38 @@ export default function ProjectDetailPage() {
     const currentAreas = project.areas || (project.area ? [project.area] : []);
     const updatedAreas = currentAreas.filter(a => a !== areaName);
 
-    // Only update local context (frontend only delete)
+    // Update local context first
     updateProject(project.id, {
       areas: updatedAreas
     });
+
+    // Update Supabase
+    if (!isDemoProject) {
+      try {
+        // Update projects table
+        const { error: projectError } = await supabase
+          .from('projects')
+          .update({ areas: updatedAreas })
+          .eq('id', project.id);
+
+        if (projectError) {
+          console.error('Error updating project areas:', projectError);
+        }
+
+        // Delete from project_areas table
+        const { error: areaError } = await supabase
+          .from('project_areas')
+          .delete()
+          .eq('project_id', project.id)
+          .eq('area_name', areaName);
+
+        if (areaError) {
+          console.error('Error deleting project area:', areaError);
+        }
+      } catch (error) {
+        console.error('Error deleting area:', error);
+      }
+    }
 
     setDeletingArea(null);
   };
@@ -1422,7 +1481,23 @@ export default function ProjectDetailPage() {
 
   const handleDeleteFile = async (fileId: string) => {
     try {
-      // Only update local state (frontend only delete)
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      // Delete from database
+      const { error } = await supabase
+        .from('project_user_files')
+        .delete()
+        .eq('id', fileId)
+        .eq('user_id', user.id);
+
+      if (error) {
+        console.error('Error deleting file:', error);
+        setUploadError('Failed to delete file');
+        return;
+      }
+
+      // Update local state
       setUserFiles(prev => prev.filter(f => f.id !== fileId));
       setDeletingFile(null);
     } catch (err) {

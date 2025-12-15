@@ -204,7 +204,23 @@ export default function chatPage() {
 
   async function deleteMessage(messageId: string) {
     try {
-      // Only update local state (frontend only delete)
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      // Delete from database
+      const { error } = await supabase
+        .from('project_chat_messages')
+        .delete()
+        .eq('id', messageId)
+        .eq('user_id', user.id);
+
+      if (error) {
+        console.error('Error deleting message:', error);
+        setError('Failed to delete message');
+        return;
+      }
+
+      // Update local state
       setMessages(prev => prev.filter(m => m.id !== messageId));
       setDeleteConfirm(null);
     } catch (err) {

@@ -2,12 +2,14 @@
 
 import { useParams, useRouter } from "next/navigation";
 import { useMemo, useState, useEffect } from "react";
-import { ChevronLeft, ChevronRight, X, ArrowLeft, Lock } from "lucide-react";
+import { ChevronLeft, ChevronRight, X, ArrowLeft, Lock, Trash2 } from "lucide-react";
 import { demoProjects, demoRenders, demoProducts, demoProjectProducts, demoProductsAll } from "@/lib/demoData";
 import { useProjects } from "@/lib/contexts/projectsContext";
 import { supabase } from "@/lib/supabase";
 import { cartService } from "@/lib/services/cartService";
 import toast from "react-hot-toast";
+import CenterModal from "@/components/CenterModal";
+import { Button } from "@/components/UI";
 
 type ProductT = { id: string; title: string; imageUrl: string; price: number };
 
@@ -41,6 +43,10 @@ export default function AreaDetailPage() {
   const [paymentStatus, setPaymentStatus] = useState<any>(null);
   const [loadingPaymentStatus, setLoadingPaymentStatus] = useState(true);
   
+  // Delete product state
+  const [deletingProduct, setDeletingProduct] = useState<string | null>(null);
+  const [productRefreshKey, setProductRefreshKey] = useState(0);
+  
   // Helper functions for selected quantities
   const getSelectedQuantity = (productId: string) => {
     return selectedQuantities.get(productId) || 1;
@@ -50,6 +56,54 @@ export default function AreaDetailPage() {
     const currentQty = getSelectedQuantity(productId);
     const newQty = Math.max(1, currentQty + delta);
     setSelectedQuantities(new Map(selectedQuantities.set(productId, newQty)));
+  };
+
+  // Delete product function
+  const handleDeleteProduct = async (productId: string) => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      // Delete from Supabase
+      const { error: dbError } = await supabase
+        .from('project_products')
+        .delete()
+        .eq('project_id', projectId)
+        .eq('product_id', productId)
+        .eq('area', areaName);
+
+      if (dbError) {
+        console.error('Error deleting product from database:', dbError);
+      }
+
+      // Delete from localStorage
+      const localKey = "dc:projectProducts";
+      const localData = JSON.parse(localStorage.getItem(localKey) || "[]");
+      const updated = localData.filter(
+        (pp: any) => !(pp.projectId === projectId && pp.productId === productId && pp.area === areaName)
+      );
+      localStorage.setItem(localKey, JSON.stringify(updated));
+
+      // Refresh product data
+      setProductRefreshKey(prev => prev + 1);
+      setDeletingProduct(null);
+      
+      toast.success('Product removed', {
+        duration: 2000,
+        position: 'top-right',
+        style: {
+          background: '#ef4444',
+          color: '#fff',
+          padding: '12px 20px',
+          fontSize: '14px',
+          fontWeight: '500',
+          borderRadius: '12px',
+        },
+      });
+    } catch (err) {
+      console.error('Error deleting product:', err);
+      toast.error('Failed to remove product');
+    }
   };
 
   // Cart helper functions using Supabase data
@@ -129,7 +183,7 @@ export default function AreaDetailPage() {
       
       fetchData();
     }
-  }, [isDemoProject, projectId, areaName]);
+  }, [isDemoProject, projectId, areaName, productRefreshKey]);
 
   // Get current user and load cart data
   useEffect(() => {
@@ -562,7 +616,7 @@ export default function AreaDetailPage() {
                   return (
                     <div
                       key={p.id}
-                      className="bg-white rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-all"
+                      className="bg-white rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-all group"
                     >
                       {/* Product Image Container */}
                       <div className="relative">
@@ -596,6 +650,17 @@ export default function AreaDetailPage() {
                           />
                         </div>
                         
+                        {/* Delete button at top-right */}
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setDeletingProduct(p.id);
+                          }}
+                          className="absolute top-2 right-2 z-20 w-7 h-7 bg-red-500 hover:bg-red-600 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-lg"
+                          title="Remove product"
+                        >
+                          <Trash2 className="w-4 h-4 text-white" />
+                        </button>
 
                         
                         {/* Quantity Selector overlaying at bottom */}
@@ -672,6 +737,34 @@ export default function AreaDetailPage() {
           </div>
         </div>
       </div>
+
+      {/* Delete Product Confirmation Modal */}
+      <CenterModal
+        open={!!deletingProduct}
+        onClose={() => setDeletingProduct(null)}
+        title="Remove Product"
+        size="small"
+      >
+        <div className="p-5">
+          <p className="text-sm text-zinc-600 mb-5">
+            Are you sure you want to remove this product from <strong>{areaName}</strong>? This action cannot be undone.
+          </p>
+          <div className="flex gap-3">
+            <Button
+              onClick={() => setDeletingProduct(null)}
+              className="flex-1 px-4 py-2 rounded-lg border border-zinc-300 hover:bg-zinc-50"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={() => deletingProduct && handleDeleteProduct(deletingProduct)}
+              className="flex-1 px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700"
+            >
+              Remove Product
+            </Button>
+          </div>
+        </div>
+      </CenterModal>
 
       {/* Lightbox */}
       {lightbox && (
