@@ -3380,8 +3380,6 @@ export default function ProjectDetailPage() {
               )}
             </Button>
           </div>
-            </Button>
-          </div>
         </div>
       </CenterModal>
 
