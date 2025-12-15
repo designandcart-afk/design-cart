@@ -212,7 +212,7 @@ export default function chatPage() {
         .from('project_chat_messages')
         .delete()
         .eq('id', messageId)
-        .eq('user_id', user.id);
+        .eq('sender_id', user.id);
 
       if (error) {
         console.error('Error deleting message:', error);
