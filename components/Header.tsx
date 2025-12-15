@@ -6,8 +6,6 @@ import { useState, useRef, useEffect } from 'react';
 import { useAuth } from '@/lib/auth/authContext';
 import { useRouter, usePathname } from 'next/navigation';
 import { useProjects } from '@/lib/contexts/projectsContext';
-import { useNotifications } from '@/lib/contexts/notificationContext';
-import { NotificationDot } from '@/components/NotificationDot';
 import { supabase } from '@/lib/supabase';
 
 export default function Header() {
@@ -16,7 +14,6 @@ export default function Header() {
   const dropdownRef = useRef<HTMLDivElement>(null);
   const { user, signOut } = useAuth();
   const { projects } = useProjects();
-  const { hasUnread } = useNotifications();
   const router = useRouter();
   const pathname = usePathname();
 
@@ -91,29 +88,26 @@ export default function Header() {
               pathname === '/' ? 'scale-x-100' : 'scale-x-0 group-hover:scale-x-100'
             }`} />
           </Link>
-          <Link href="/chat" className={`transition-colors relative group px-2 py-1 flex items-center gap-1.5 ${
+          <Link href="/chat" className={`transition-colors relative group px-2 py-1 ${
             pathname === '/chat' ? 'text-[#d96857]' : 'text-[#2e2e2e]/70 hover:text-[#d96857]'
           }`}>
             Chat
-            {hasUnread('chat') && <NotificationDot show color="coral" size="sm" />}
             <span className={`absolute inset-x-0 bottom-0 h-0.5 bg-[#d96857] transition-transform origin-left ${
               pathname === '/chat' ? 'scale-x-100' : 'scale-x-0 group-hover:scale-x-100'
             }`} />
           </Link>
-          <Link href="/cart" className={`transition-colors relative group px-2 py-1 flex items-center gap-1.5 ${
+          <Link href="/cart" className={`transition-colors relative group px-2 py-1 ${
             pathname === '/cart' ? 'text-[#d96857]' : 'text-[#2e2e2e]/70 hover:text-[#d96857]'
           }`}>
             Cart
-            {hasUnread('cart') && <NotificationDot show color="coral" size="sm" />}
             <span className={`absolute inset-x-0 bottom-0 h-0.5 bg-[#d96857] transition-transform origin-left ${
               pathname === '/cart' ? 'scale-x-100' : 'scale-x-0 group-hover:scale-x-100'
             }`} />
           </Link>
-          <Link href="/orders" className={`transition-colors relative group px-2 py-1 flex items-center gap-1.5 ${
+          <Link href="/orders" className={`transition-colors relative group px-2 py-1 ${
             pathname === '/orders' ? 'text-[#d96857]' : 'text-[#2e2e2e]/70 hover:text-[#d96857]'
           }`}>
             Orders
-            {hasUnread('order') && <NotificationDot show color="coral" size="sm" />}
             <span className={`absolute inset-x-0 bottom-0 h-0.5 bg-[#d96857] transition-transform origin-left ${
               pathname === '/orders' ? 'scale-x-100' : 'scale-x-0 group-hover:scale-x-100'
             }`} />

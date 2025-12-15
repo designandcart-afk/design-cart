@@ -5,7 +5,6 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from 'react-hot-toast';
 import { AuthProvider } from '@/lib/auth/authContext';
 import { ProjectsProvider } from '@/lib/contexts/projectsContext';
-import { NotificationProvider } from '@/lib/contexts/notificationContext';
 import RoutePrefetch from '@/components/RoutePrefetch';
 import { useState } from 'react';
 
@@ -23,20 +22,18 @@ export function Providers({ children }: { children: React.ReactNode }) {
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <ProjectsProvider>
-          <NotificationProvider>
-            <RoutePrefetch />
-            {children}
-            <Toaster
-              position="top-right"
-              toastOptions={{
-                style: {
-                  background: '#2e2e2e',
-                  color: '#fff',
-                  borderRadius: '999px',
-                },
-              }}
-            />
-          </NotificationProvider>
+          <RoutePrefetch />
+          {children}
+          <Toaster
+            position="top-right"
+            toastOptions={{
+              style: {
+                background: '#2e2e2e',
+                color: '#fff',
+                borderRadius: '999px',
+              },
+            }}
+          />
         </ProjectsProvider>
       </AuthProvider>
     </QueryClientProvider>
