@@ -6,6 +6,8 @@ import { useRouter } from "next/navigation";
 import { demoProductsAll, demoProjects } from "@/lib/demoData";
 import { Button } from "@/components/UI";
 import { useProjects } from "@/lib/contexts/projectsContext";
+import { useNotifications } from "@/lib/contexts/notificationContext";
+import { NotificationDot } from "@/components/NotificationDot";
 import { ChevronDown, ChevronRight } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { cartService } from "@/lib/services/cartService";
@@ -29,6 +31,7 @@ type CartLine = {
 
 export default function CartPage() {
   const { projects } = useProjects();
+  const { hasUnread, markAllAsRead } = useNotifications();
   const router = useRouter();
   
   function toggleSelect(id: string){ setSelectedIds(prev => prev.includes(id) ? prev.filter(x=>x!==id) : [...prev, id]); }
@@ -51,6 +54,8 @@ export default function CartPage() {
   // ✅ Load data from Supabase
   useEffect(() => {
     loadCart();
+    // Mark cart notifications as read when page loads
+    markAllAsRead("cart");
   }, []);
 
   async function loadCart() {
@@ -414,7 +419,10 @@ export default function CartPage() {
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6">
         <div className="flex items-center gap-3 mb-4">
           <div className="h-9 w-1.5 rounded-full bg-[#d96857]" />
-          <h1 className="text-2xl font-semibold text-[#2e2e2e]">Cart</h1>
+          <h1 className="text-2xl font-semibold text-[#2e2e2e] flex items-center gap-2">
+            Cart
+            {hasUnread("cart") && <NotificationDot show color="coral" size="md" />}
+          </h1>
         </div>
 
         {loading ? (
