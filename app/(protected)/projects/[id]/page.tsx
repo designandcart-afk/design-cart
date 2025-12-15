@@ -158,6 +158,43 @@ export default function ProjectDetailPage() {
     }
   };
 
+  // Delete product from project
+  const handleDeleteProduct = async (productId: string, area: string) => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      // Delete from Supabase project_products table
+      const { error: dbError } = await supabase
+        .from('project_products')
+        .delete()
+        .eq('project_id', projectId)
+        .eq('product_id', productId)
+        .eq('area', area);
+
+      if (dbError) {
+        console.error('Error deleting product from database:', dbError);
+      }
+
+      // Delete from localStorage
+      const localKey = "dc:projectProducts";
+      const localData = JSON.parse(localStorage.getItem(localKey) || "[]");
+      const updated = localData.filter(
+        (pp: any) => !(pp.projectId === projectId && pp.productId === productId && pp.area === area)
+      );
+      localStorage.setItem(localKey, JSON.stringify(updated));
+
+      // Refresh linked products
+      setLinked(prev => prev.filter(
+        (pp: any) => !(pp.product_id === productId && pp.area === area)
+      ));
+      setProductRefreshKey(prev => prev + 1);
+      setDeletingProduct(null);
+    } catch (err) {
+      console.error('Error deleting product:', err);
+    }
+  };
+
   // Load estimates when Quotes & Bills modal opens, auto-generate if none exist
   useEffect(() => {
     const loadEstimates = async () => {
@@ -501,6 +538,7 @@ export default function ProjectDetailPage() {
   const [driveLink, setDriveLink] = useState('');
   const [savingDriveLink, setSavingDriveLink] = useState(false);
   const [deletingFile, setDeletingFile] = useState<string | null>(null);
+  const [deletingProduct, setDeletingProduct] = useState<{ productId: string; area: string } | null>(null);
 
   // Request change modal state
   const [requestChangeModal, setRequestChangeModal] = useState<{
@@ -2028,10 +2066,23 @@ export default function ProjectDetailPage() {
                   <div className="flex gap-2.5 overflow-x-auto pb-1.5">{uniqueProductsWithCount.map(({ product: p, count }) => (
                       <div
                         key={p.id}
-                        className="flex-shrink-0 cursor-pointer group relative"
-                        onClick={() => router.push(`/projects/${projectId}/area/${encodeURIComponent(area)}`)}
+                        className="flex-shrink-0 group relative"
                       >
-                        <div className="relative w-[80px] h-[80px] rounded-lg">
+                        {/* Delete button */}
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setDeletingProduct({ productId: p.id, area });
+                          }}
+                          className="absolute -top-2 -right-2 z-20 w-6 h-6 bg-red-500 hover:bg-red-600 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-lg"
+                          title="Remove product"
+                        >
+                          <Trash2 className="w-3 h-3 text-white" />
+                        </button>
+                        <div
+                          className="relative w-[80px] h-[80px] rounded-lg cursor-pointer"
+                          onClick={() => router.push(`/projects/${projectId}/area/${encodeURIComponent(area)}`)}
+                        >
                           <img
                              src={p.imageUrl}
                              className="w-full h-full object-cover rounded-lg border border-black/5 group-hover:border-[#d96857]/30 transition-all group-hover:shadow-md"
@@ -3043,6 +3094,34 @@ export default function ProjectDetailPage() {
               className="flex-1 px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700"
             >
               Delete File
+            </Button>
+          </div>
+        </div>
+      </CenterModal>
+
+      {/* Delete Product Confirmation Modal */}
+      <CenterModal
+        open={!!deletingProduct}
+        onClose={() => setDeletingProduct(null)}
+        title="Remove Product"
+        size="small"
+      >
+        <div className="p-5">
+          <p className="text-sm text-zinc-600 mb-5">
+            Are you sure you want to remove this product from <strong>{deletingProduct?.area}</strong>? This action cannot be undone.
+          </p>
+          <div className="flex gap-3">
+            <Button
+              onClick={() => setDeletingProduct(null)}
+              className="flex-1 px-4 py-2 rounded-lg border border-zinc-300 hover:bg-zinc-50"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={() => deletingProduct && handleDeleteProduct(deletingProduct.productId, deletingProduct.area)}
+              className="flex-1 px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700"
+            >
+              Remove Product
             </Button>
           </div>
         </div>
