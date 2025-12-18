@@ -383,8 +383,29 @@ export default function CartPage() {
               window.location.href = `/orders?success=true`;
               return;
             } else {
-              console.error('Payment verification failed:', verifyData);
-              alert('Payment verification failed. Please contact support.');
+              console.error('❌ Payment verification failed:', {
+                status: verifyResponse.status,
+                statusText: verifyResponse.statusText,
+                data: verifyData,
+                error: verifyData.error,
+                details: verifyData.details
+              });
+              
+              // Show detailed error message
+              let errorMsg = verifyData.error || 'Payment verification failed';
+              
+              if (verifyData.details) {
+                errorMsg += '\n\n' + verifyData.details;
+              }
+              
+              // Add helpful context
+              if (errorMsg.includes('SUPABASE_SERVICE_ROLE_KEY') || errorMsg.includes('RAZORPAY_KEY_SECRET')) {
+                errorMsg += '\n\nNote: This is a configuration issue. Your payment was processed by Razorpay. Please contact support with your payment ID: ' + response.razorpay_payment_id;
+              } else {
+                errorMsg += '\n\nPlease check your Orders page or contact support.';
+              }
+              
+              alert(errorMsg);
               setPaying(false);
             }
           } catch (err) {

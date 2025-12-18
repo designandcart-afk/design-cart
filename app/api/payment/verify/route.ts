@@ -53,12 +53,15 @@ export async function POST(req: NextRequest) {
     console.log('Authenticated user:', user.id);
 
     // Create admin Supabase client with service role key (bypasses RLS)
-    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
     
     if (!supabaseServiceKey) {
-      console.error('SUPABASE_SERVICE_ROLE_KEY not configured');
+      console.error('❌ CRITICAL: SUPABASE_SERVICE_ROLE_KEY not configured in environment variables');
       return NextResponse.json(
-        { error: 'Server configuration error' },
+        { 
+          error: 'Server configuration error - Missing SUPABASE_SERVICE_ROLE_KEY',
+          details: 'Please add SUPABASE_SERVICE_ROLE_KEY to your environment variables'
+        },
         { status: 500 }
       );
     }
@@ -71,13 +74,31 @@ export async function POST(req: NextRequest) {
     });
 
     // Verify signature
+    const razorpaySecret = process.env.RAZORPAY_KEY_SECRET;
+    
+    if (!razorpaySecret) {
+      console.error('❌ CRITICAL: RAZORPAY_KEY_SECRET not configured in environment variables');
+      return NextResponse.json(
+        { 
+          error: 'Server configuration error - Missing RAZORPAY_KEY_SECRET',
+          details: 'Please add RAZORPAY_KEY_SECRET to your environment variables'
+        },
+        { status: 500 }
+      );
+    }
+    
     const generated_signature = crypto
-      .createHmac('sha256', process.env.RAZORPAY_KEY_SECRET!)
+      .createHmac('sha256', razorpaySecret)
       .update(`${razorpay_order_id}|${razorpay_payment_id}`)
       .digest('hex');
 
     if (generated_signature !== razorpay_signature) {
-      console.error('Signature mismatch');
+      console.error('❌ Signature mismatch:', {
+        generated: generated_signature,
+        received: razorpay_signature,
+        order_id: razorpay_order_id,
+        payment_id: razorpay_payment_id
+      });
       return NextResponse.json(
         { error: 'Invalid payment signature' },
         { status: 400 }
