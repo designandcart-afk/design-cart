@@ -7,6 +7,7 @@ import { useAuth } from '@/lib/auth/authContext';
 import { useRouter, usePathname } from 'next/navigation';
 import { useProjects } from '@/lib/contexts/projectsContext';
 import { supabase } from '@/lib/supabase';
+import MobileNav from '@/components/MobileNav';
 
 export default function Header() {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -121,6 +122,9 @@ export default function Header() {
             }`} />
           </Link>
         </nav>
+
+        {/* Mobile Navigation */}
+        <MobileNav />
 
         {/* Profile */}
         <div className="flex items-center gap-4">

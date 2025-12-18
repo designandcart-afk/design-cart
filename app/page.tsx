@@ -391,7 +391,7 @@ const SCOPES = [
         </div>
 
         {/* Projects */}
-        <div className="lg:col-span-2 bg-white shadow-xl shadow-black/5 rounded-3xl p-6 border border-black/5">
+        <div className="md:col-span-1 lg:col-span-2 bg-white shadow-xl shadow-black/5 rounded-3xl p-6 border border-black/5">
           <h2 className="text-xl font-semibold text-[#2e2e2e] mb-5">Projects</h2>
 
           {/* Single Filter Bar: Search + Status + Sort */}

@@ -424,9 +424,9 @@ export default function CartPage() {
         ) : view.length === 0 ? (
           <EmptyState />
         ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-[2fr_1fr] gap-6">
             {/* Products list grouped by project */}
-            <section className="lg:col-span-2 space-y-5">
+            <section className="space-y-5">
               {/* Grouped by Projects */}
               {Object.entries(groupedByProject.groups).map(([projectId, items]) => {
                 const project = items[0]?.project;

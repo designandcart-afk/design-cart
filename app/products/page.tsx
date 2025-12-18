@@ -172,8 +172,8 @@ export default function ProductsPage() {
 
         {/* Main Content Area */}
         <div className="flex flex-1">
-          {/* Desktop Filter Sidebar */}
-          <div className="hidden lg:block">
+          {/* Desktop & Tablet Filter Sidebar */}
+          <div className="hidden md:block">
             <FilterSidebar
               filters={filters}
               onUpdateFilters={updateFilters}
