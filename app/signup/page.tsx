@@ -19,7 +19,7 @@ export default function SignUpPage() {
   const [success, setSuccess] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const { signUp, isDemo, switchToReal } = useAuth();
+  const { signUp } = useAuth();
   const router = useRouter();
 
   const validateForm = () => {
@@ -58,8 +58,6 @@ export default function SignUpPage() {
     setErrors({});
 
     try {
-      // Don't automatically switch to real mode
-      // Let users explicitly choose demo or real mode
       await signUp(formData.email, formData.name, formData.password);
       setSuccess(true);
     } catch (error) {
@@ -154,6 +152,15 @@ export default function SignUpPage() {
               Join Design&Cart to start your design journey
             </p>
           </div>
+
+          {/* Tutorial Link - Prominent placement */}
+          <Link
+            href="/tutorial"
+            className="mb-6 w-full flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-[#d96857]/10 border-2 border-[#d96857]/20 text-[#d96857] hover:bg-[#d96857]/20 hover:border-[#d96857]/40 transition-all"
+          >
+            <BookOpen className="w-5 h-5" />
+            <span className="font-semibold">New here? Watch Tutorial First</span>
+          </Link>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
@@ -276,17 +283,6 @@ export default function SignUpPage() {
               )}
             </Button>
           </form>
-
-          {/* Tutorial Link */}
-          <div className="mt-6">
-            <Link
-              href="/tutorial"
-              className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-xl border border-[#2e2e2e]/10 text-[#2e2e2e] hover:bg-[#f2f0ed] hover:border-[#d96857]/30 transition-all"
-            >
-              <BookOpen className="w-5 h-5" />
-              <span className="font-medium">New here? Watch Tutorial</span>
-            </Link>
-          </div>
 
           {/* Footer */}
           <p className="mt-6 text-center text-sm text-[#2e2e2e]/70">

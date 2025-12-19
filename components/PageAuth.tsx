@@ -124,13 +124,6 @@ export default function PageAuth({
                     </a>
                   </p>
                 </div>
-
-                {/* Demo credentials hint */}
-                <div className="mt-6 p-3 bg-[#f2f0ed] rounded-xl border border-zinc-200">
-                  <p className="text-xs text-zinc-600 text-center">
-                    <strong>Demo Mode:</strong> Login using demo@designandcart.in and password demo123 to see the demo interface
-                  </p>
-                </div>
               </div>
             </div>
           </div>

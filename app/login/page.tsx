@@ -15,7 +15,7 @@ function LoginForm() {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
-  const { signIn, isDemo, switchToDemo } = useAuth();
+  const { signIn } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
   const returnTo = searchParams?.get('returnTo') || '/';
@@ -36,38 +36,6 @@ function LoginForm() {
     } catch (error) {
       setErrors({
         submit: error instanceof Error ? error.message : 'Failed to sign in'
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleDemoLogin = async () => {
-    try {
-      setIsLoading(true);
-      setErrors({});
-      
-      // Check if we're in demo mode or switch to demo mode
-      if (!isDemo) {
-        // If not in demo mode, we need to switch to demo mode first
-        switchToDemo();
-        // Wait a bit for the context to update
-        await new Promise(resolve => setTimeout(resolve, 100));
-      }
-      
-      // Auto-fill demo credentials and sign in
-      setEmail('demo@designandcart.in');
-      setPassword('demo123');
-      
-      // Sign in with demo credentials
-      await signIn('demo@designandcart.in', 'demo123');
-      
-      // Small delay to ensure demo mode is set
-      await new Promise(resolve => setTimeout(resolve, 100));
-      router.push('/');
-    } catch (error: any) {
-      setErrors({
-        demo: 'Failed to access demo mode'
       });
     } finally {
       setIsLoading(false);
@@ -100,6 +68,15 @@ function LoginForm() {
               Sign in to your account to continue
             </p>
           </div>
+
+          {/* Tutorial Link - Prominent placement */}
+          <Link
+            href="/tutorial"
+            className="mb-6 w-full flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-[#d96857]/10 border-2 border-[#d96857]/20 text-[#d96857] hover:bg-[#d96857]/20 hover:border-[#d96857]/40 transition-all"
+          >
+            <BookOpen className="w-5 h-5" />
+            <span className="font-semibold">New here? Watch Tutorial First</span>
+          </Link>
 
           {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -179,23 +156,7 @@ function LoginForm() {
             </Button>
           </form>
 
-          {/* Demo Account Info */}
-          <div className="mt-6 p-3 bg-[#f2f0ed] rounded-xl border border-zinc-200">
-            <p className="text-xs text-[#2e2e2e]/70 text-center">
-              Demo credentials: demo@designandcart.in / demo123
-            </p>
-          </div>
 
-          {/* Tutorial Link */}
-          <div className="mt-4">
-            <Link
-              href="/tutorial"
-              className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-xl border border-[#2e2e2e]/10 text-[#2e2e2e] hover:bg-[#f2f0ed] hover:border-[#d96857]/30 transition-all"
-            >
-              <BookOpen className="w-5 h-5" />
-              <span className="font-medium">New here? Watch Tutorial</span>
-            </Link>
-          </div>
 
           {/* Footer */}
           <p className="mt-6 text-center text-sm text-[#2e2e2e]/70">

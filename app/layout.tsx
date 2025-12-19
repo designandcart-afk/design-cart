@@ -3,7 +3,6 @@ import "./globals.css";
 import type { Metadata } from "next";
 import { Providers } from './providers';
 import Header from "@/components/Header";
-import DemoBanner from "@/components/DemoBanner";
 
 export const metadata: Metadata = {
   title: "Design&Cart",
@@ -29,7 +28,6 @@ export default function RootLayout({
         <Providers>
           <div className="min-h-screen flex flex-col">
             <Header />
-            <DemoBanner />
             <main className="container mx-auto px-4 sm:px-6 lg:px-8 py-6 max-w-7xl flex-1">
               <div className="rounded-3xl overflow-hidden">
                 {children}
