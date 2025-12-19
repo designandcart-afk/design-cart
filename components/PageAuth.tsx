@@ -3,7 +3,8 @@
 import { useAuth } from '@/lib/auth/authContext';
 import { useState } from 'react';
 import { Button, Input } from './UI';
-import { Lock } from 'lucide-react';
+import { Lock, BookOpen } from 'lucide-react';
+import Link from 'next/link';
 
 export default function PageAuth({
   children,
@@ -147,6 +148,17 @@ export default function PageAuth({
                 <a href="/signup" className="text-sm font-medium text-[#d96857] hover:underline">
                   Create an account
                 </a>
+              </div>
+              
+              {/* Tutorial Button */}
+              <div className="mt-4">
+                <Link
+                  href="/tutorial"
+                  className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-[#d96857]/10 border-2 border-[#d96857]/20 text-[#d96857] hover:bg-[#d96857]/20 hover:border-[#d96857]/40 transition-all"
+                >
+                  <BookOpen className="w-5 h-5" />
+                  <span className="font-semibold">New here? Watch Tutorial</span>
+                </Link>
               </div>
             </div>
           </div>
