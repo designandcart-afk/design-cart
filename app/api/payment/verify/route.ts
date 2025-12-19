@@ -55,12 +55,22 @@ export async function POST(req: NextRequest) {
     // Create admin Supabase client with service role key (bypasses RLS)
     const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
     
+    // Debug: Check environment variables (without exposing full keys)
+    console.log('🔍 Environment check:', {
+      hasServiceKey: !!supabaseServiceKey,
+      serviceKeyLength: supabaseServiceKey?.length || 0,
+      serviceKeyPrefix: supabaseServiceKey?.substring(0, 10) || 'undefined',
+      nodeEnv: process.env.NODE_ENV,
+      vercelEnv: process.env.VERCEL_ENV,
+    });
+    
     if (!supabaseServiceKey) {
       console.error('❌ CRITICAL: SUPABASE_SERVICE_ROLE_KEY not configured in environment variables');
+      console.error('Available env keys:', Object.keys(process.env).filter(k => k.includes('SUPABASE')));
       return NextResponse.json(
         { 
           error: 'Server configuration error - Missing SUPABASE_SERVICE_ROLE_KEY',
-          details: 'Please add SUPABASE_SERVICE_ROLE_KEY to your environment variables'
+          details: 'Please add SUPABASE_SERVICE_ROLE_KEY to your environment variables. Check Vercel deployment logs for details.'
         },
         { status: 500 }
       );

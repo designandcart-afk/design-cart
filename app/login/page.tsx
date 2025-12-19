@@ -4,7 +4,7 @@ import { useState, Suspense } from 'react';
 import { useAuth } from '@/lib/auth/authContext';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { Lock, Mail, Eye, EyeOff, ArrowLeft, Loader2 } from 'lucide-react';
+import { Lock, Mail, Eye, EyeOff, ArrowLeft, Loader2, BookOpen } from 'lucide-react';
 import { Button } from '@/components/UI';
 
 export const dynamic = 'force-dynamic';
@@ -184,6 +184,17 @@ function LoginForm() {
             <p className="text-xs text-[#2e2e2e]/70 text-center">
               Demo credentials: demo@designandcart.in / demo123
             </p>
+          </div>
+
+          {/* Tutorial Link */}
+          <div className="mt-4">
+            <Link
+              href="/tutorial"
+              className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-xl border border-[#2e2e2e]/10 text-[#2e2e2e] hover:bg-[#f2f0ed] hover:border-[#d96857]/30 transition-all"
+            >
+              <BookOpen className="w-5 h-5" />
+              <span className="font-medium">New here? Watch Tutorial</span>
+            </Link>
           </div>
 
           {/* Footer */}

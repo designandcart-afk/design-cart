@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Mail, Lock, Eye, EyeOff, ArrowLeft, Loader2, User } from 'lucide-react';
+import { Mail, Lock, Eye, EyeOff, ArrowLeft, Loader2, User, BookOpen } from 'lucide-react';
 import { Button } from '@/components/UI';
 import { useAuth } from '@/lib/auth/authContext';
 
@@ -276,6 +276,17 @@ export default function SignUpPage() {
               )}
             </Button>
           </form>
+
+          {/* Tutorial Link */}
+          <div className="mt-6">
+            <Link
+              href="/tutorial"
+              className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-xl border border-[#2e2e2e]/10 text-[#2e2e2e] hover:bg-[#f2f0ed] hover:border-[#d96857]/30 transition-all"
+            >
+              <BookOpen className="w-5 h-5" />
+              <span className="font-medium">New here? Watch Tutorial</span>
+            </Link>
+          </div>
 
           {/* Footer */}
           <p className="mt-6 text-center text-sm text-[#2e2e2e]/70">

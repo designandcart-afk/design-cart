@@ -8,6 +8,7 @@ import { useRouter, usePathname } from 'next/navigation';
 import { useProjects } from '@/lib/contexts/projectsContext';
 import { supabase } from '@/lib/supabase';
 import MobileNav from '@/components/MobileNav';
+import ProfileDropdown from '@/components/ProfileDropdown';
 
 export default function Header() {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -158,15 +159,10 @@ export default function Header() {
 
             {/* Dropdown Menu */}
             {user && isDropdownOpen && (
-              <div className="absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-lg border border-[#2e2e2e]/10 py-2 z-50">
-                <button
-                  onClick={handleSignOut}
-                  className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-[#d96857] hover:bg-[#f8f7f4] transition-colors"
-                >
-                  <LogOut className="w-4 h-4" />
-                  Sign Out
-                </button>
-              </div>
+              <ProfileDropdown 
+                onSignOut={handleSignOut}
+                onClose={() => setIsDropdownOpen(false)}
+              />
             )}
           </div>
         </div>
