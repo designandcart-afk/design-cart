@@ -224,11 +224,13 @@ export default function ProjectDetailPage() {
         }
 
         // Load bills from both project_design_payments (3D work) and project_quotes_bills (product purchases)
+        // Only include PAID design payments as bills
         const [paymentsData, billsData] = await Promise.all([
           supabase
             .from('project_design_payments')
             .select('*')
             .eq('project_id', projectId)
+            .eq('status', 'paid') // Only include paid payments as bills
             .order('created_at', { ascending: false }),
           supabase
             .from('project_quotes_bills')
