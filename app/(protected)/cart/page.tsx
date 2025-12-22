@@ -249,8 +249,8 @@ export default function CartPage() {
 
   // Calculate tax (18% GST example)
   const taxRate = 18;
-  const taxAmount = (subtotal * taxRate) / 100;
-  const total = subtotal + taxAmount;
+  const taxAmount = Math.round((subtotal * taxRate) / 100 * 100) / 100; // Round to 2 decimal places
+  const total = Math.round((subtotal + taxAmount) * 100) / 100; // Round to 2 decimal places
 
   // ✅ Place Order with Razorpay
   async function placeOrder() {

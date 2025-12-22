@@ -155,11 +155,16 @@ export async function POST(req: NextRequest) {
     });
 
     // Create Razorpay order
-    console.log('📋 Creating Razorpay order with amount:', amount * 100);
+    const amountInPaise = Math.round(amount * 100); // Ensure integer conversion
+    console.log('📋 Creating Razorpay order:', { 
+      originalAmount: amount, 
+      amountInPaise,
+      currency
+    });
     let order;
     try {
       order = await razorpay.orders.create({
-        amount: amount * 100, // Convert to paise (smallest currency unit)
+        amount: amountInPaise, // Convert to paise (smallest currency unit) and ensure integer
         currency,
         receipt: `receipt_${Date.now()}`,
         notes: {
