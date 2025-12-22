@@ -218,7 +218,9 @@ export default function AreaDetailPage() {
           const response = await fetch(`/api/projects/${projectId}/payment-status`);
           if (response.ok) {
             const data = await response.json();
-            setPaymentStatus(data);
+            if (data.success) {
+              setPaymentStatus(data.status);
+            }
           }
         } catch (error) {
           console.error('Failed to load payment status:', error);
@@ -439,7 +441,7 @@ export default function AreaDetailPage() {
                     <Lock className="w-16 h-16 text-white mb-4" />
                     <h3 className="text-xl font-semibold text-white mb-2">Renders Locked</h3>
                     <p className="text-sm text-white/80 text-center max-w-xs px-4">
-                      Complete payment to unlock renders
+                      Complete balance payment to unlock renders
                     </p>
                   </div>
                 )}
