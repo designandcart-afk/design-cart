@@ -2,15 +2,16 @@
 
 import { useState } from 'react';
 import { 
-  BookOpen, 
+  LogIn, 
+  UserPlus, 
   FolderPlus, 
   ShoppingBag, 
-  Upload, 
   CheckCircle, 
   Image as ImageIcon, 
   ShoppingCart, 
   CreditCard,
-  Package
+  Package,
+  FileText
 } from 'lucide-react';
 
 interface TutorialSection {
@@ -20,15 +21,15 @@ interface TutorialSection {
 }
 
 const tutorialSections: TutorialSection[] = [
-  { id: 'getting-started', title: 'Getting Started', icon: BookOpen },
+  { id: 'getting-started', title: 'Getting Started', icon: LogIn },
   { id: 'create-project', title: 'Create Project', icon: FolderPlus },
   { id: 'add-products', title: 'Add Products', icon: ShoppingBag },
-  { id: 'upload-screenshots', title: 'Upload Screenshots', icon: Upload },
-  { id: 'approval-process', title: 'Approval Process', icon: CheckCircle },
+  { id: 'review-approve', title: 'Review & Approve Designs', icon: CheckCircle },
   { id: 'view-renders', title: 'View Renders', icon: ImageIcon },
   { id: 'add-to-cart', title: 'Add to Cart', icon: ShoppingCart },
   { id: 'checkout', title: 'Checkout', icon: CreditCard },
   { id: 'track-orders', title: 'Track Orders', icon: Package },
+  { id: 'bills-invoices', title: 'Bills & Invoices', icon: FileText },
 ];
 
 export default function TutorialPage() {
@@ -37,82 +38,95 @@ export default function TutorialPage() {
   const renderContent = () => {
     switch (activeSection) {
       case 'getting-started':
+
         return (
           <div className="space-y-6">
-            <h2 className="text-3xl font-bold text-[#2e2e2e]">Welcome to Design&Cart</h2>
+            <h2 className="text-3xl font-bold text-[#2e2e2e]">Getting Started</h2>
             <p className="text-[#2e2e2e]/70 text-lg">
-              Learn how to use our platform to bring your interior design visions to life.
+              Create your account or sign in to access your professional dashboard.
             </p>
-            
-            <div className="aspect-video bg-gray-100 rounded-xl flex items-center justify-center border border-[#2e2e2e]/10">
-              <div className="text-center space-y-2">
-                <BookOpen className="w-16 h-16 mx-auto text-[#2e2e2e]/30" />
-                <p className="text-[#2e2e2e]/50">Tutorial video will appear here</p>
-                <p className="text-sm text-[#2e2e2e]/40">YouTube embed placeholder</p>
-              </div>
+
+            {/* Dashboard Screenshot */}
+            <div className="aspect-video bg-gray-100 rounded-xl flex items-center justify-center border border-[#2e2e2e]/10 overflow-hidden">
+              <img
+                src="/screenshots/dashboard.png"
+                alt="Dashboard Screenshot"
+                className="object-contain max-h-full max-w-full"
+              />
             </div>
 
             <div className="bg-[#f8f7f4] rounded-xl p-6 space-y-4">
-              <h3 className="text-xl font-semibold text-[#2e2e2e]">What You'll Learn</h3>
+              <h3 className="text-xl font-semibold text-[#2e2e2e]">Quick Start</h3>
               <ul className="space-y-2 text-[#2e2e2e]/70">
                 <li className="flex items-start gap-2">
                   <span className="text-[#d96857] mt-1">•</span>
-                  <span>How to create and manage your design projects</span>
+                  <span>Sign up with your business email or sign in if you already have an account</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-[#d96857] mt-1">•</span>
-                  <span>Browse and select products for your designs</span>
+                  <span>Complete your profile to unlock all features</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-[#d96857] mt-1">•</span>
-                  <span>Upload screenshots and get professional renders</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-[#d96857] mt-1">•</span>
-                  <span>Place orders and track deliveries</span>
+                  <span>Explore the dashboard and start creating projects</span>
                 </li>
               </ul>
+            </div>
+
+            <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
+              <p className="text-sm text-blue-800">
+                <strong>Tip:</strong> Use your work email for seamless communication and quick verification.
+              </p>
             </div>
           </div>
         );
 
       case 'create-project':
+
         return (
           <div className="space-y-6">
-            <h2 className="text-3xl font-bold text-[#2e2e2e]">Create Your First Project</h2>
-            <p className="text-[#2e2e2e]/70 text-lg">
-              Start by creating a project for the room you want to design.
-            </p>
+            <h2 className="text-3xl font-bold text-[#2e2e2e]">Create Project</h2>
+            <p className="text-[#2e2e2e]/70 text-lg">Start a new project to organize your design work and product selections.</p>
 
-            <div className="bg-gray-100 rounded-xl p-8 border border-[#2e2e2e]/10">
-              <p className="text-center text-[#2e2e2e]/50">Screenshot placeholder</p>
-              <p className="text-center text-sm text-[#2e2e2e]/40 mt-2">Dashboard → Create Project button</p>
-            </div>
-
-            <div className="space-y-4">
-              <h3 className="text-xl font-semibold text-[#2e2e2e]">Steps:</h3>
-              <ol className="space-y-3 text-[#2e2e2e]/70">
-                <li className="flex gap-3">
-                  <span className="flex-shrink-0 w-6 h-6 rounded-full bg-[#d96857] text-white flex items-center justify-center text-sm font-medium">1</span>
-                  <span>Click the "Create New Project" button on your Dashboard</span>
-                </li>
-                <li className="flex gap-3">
-                  <span className="flex-shrink-0 w-6 h-6 rounded-full bg-[#d96857] text-white flex items-center justify-center text-sm font-medium">2</span>
-                  <span>Enter your project name (e.g., "Living Room Makeover")</span>
-                </li>
-                <li className="flex gap-3">
-                  <span className="flex-shrink-0 w-6 h-6 rounded-full bg-[#d96857] text-white flex items-center justify-center text-sm font-medium">3</span>
-                  <span>Select the room type from the dropdown</span>
-                </li>
-                <li className="flex gap-3">
-                  <span className="flex-shrink-0 w-6 h-6 rounded-full bg-[#d96857] text-white flex items-center justify-center text-sm font-medium">4</span>
-                  <span>Enter the area in square feet</span>
-                </li>
-                <li className="flex gap-3">
-                  <span className="flex-shrink-0 w-6 h-6 rounded-full bg-[#d96857] text-white flex items-center justify-center text-sm font-medium">5</span>
-                  <span>Click "Create" to save your project</span>
-                </li>
-              </ol>
+            {/* Flex layout: image left, content right */}
+            <div className="flex flex-col md:flex-row gap-8 items-center bg-white rounded-xl p-8 border-2 border-dashed border-[#2e2e2e]/20">
+              <div className="md:w-1/2 w-full flex justify-center">
+                <img
+                  src="/screenshots/create-project.png"
+                  alt="Create Project Screenshot"
+                  className="object-contain max-h-96 rounded-lg border"
+                />
+              </div>
+              <div className="md:w-1/2 w-full space-y-4">
+                <h3 className="text-xl font-semibold text-[#2e2e2e]">How to Create a Project</h3>
+                <ol className="space-y-3 text-[#2e2e2e]/70">
+                  <li className="flex gap-3">
+                    <span className="flex-shrink-0 w-6 h-6 rounded-full bg-[#d96857] text-white flex items-center justify-center text-sm font-medium">1</span>
+                    <span>Click "Create Project" on your dashboard.</span>
+                  </li>
+                  <li className="flex gap-3">
+                    <span className="flex-shrink-0 w-6 h-6 rounded-full bg-[#d96857] text-white flex items-center justify-center text-sm font-medium">2</span>
+                    <span>Enter the project name and select the scope (e.g., 2BHK, Villa).</span>
+                  </li>
+                  <li className="flex gap-3">
+                    <span className="flex-shrink-0 w-6 h-6 rounded-full bg-[#d96857] text-white flex items-center justify-center text-sm font-medium">3</span>
+                    <span>Add areas/rooms, address, pincode, and any notes.</span>
+                  </li>
+                  <li className="flex gap-3">
+                    <span className="flex-shrink-0 w-6 h-6 rounded-full bg-[#d96857] text-white flex items-center justify-center text-sm font-medium">4</span>
+                    <span>Upload reference files if needed.</span>
+                  </li>
+                  <li className="flex gap-3">
+                    <span className="flex-shrink-0 w-6 h-6 rounded-full bg-[#d96857] text-white flex items-center justify-center text-sm font-medium">5</span>
+                    <span>Save to create your project card.</span>
+                  </li>
+                </ol>
+                <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mt-4">
+                  <p className="text-sm text-blue-800">
+                    <strong>Tip:</strong> Add detailed notes and files to keep all project info in one place.
+                  </p>
+                </div>
+              </div>
             </div>
           </div>
         );
@@ -120,132 +134,116 @@ export default function TutorialPage() {
       case 'add-products':
         return (
           <div className="space-y-6">
-            <h2 className="text-3xl font-bold text-[#2e2e2e]">Add Products to Your Design</h2>
+            <h2 className="text-3xl font-bold text-[#2e2e2e]">Add Products</h2>
             <p className="text-[#2e2e2e]/70 text-lg">
-              Browse our catalog and add products to your project.
+              Curate and assign products to each area of your project.
             </p>
 
-            <div className="bg-gray-100 rounded-xl p-8 border border-[#2e2e2e]/10">
-              <p className="text-center text-[#2e2e2e]/50">Screenshot placeholder</p>
-              <p className="text-center text-sm text-[#2e2e2e]/40 mt-2">Products page with filters</p>
-            </div>
-
-            <div className="space-y-4">
-              <h3 className="text-xl font-semibold text-[#2e2e2e]">How to Add Products:</h3>
-              <ol className="space-y-3 text-[#2e2e2e]/70">
-                <li className="flex gap-3">
-                  <span className="flex-shrink-0 w-6 h-6 rounded-full bg-[#d96857] text-white flex items-center justify-center text-sm font-medium">1</span>
-                  <span>Navigate to the Products page from the top menu</span>
-                </li>
-                <li className="flex gap-3">
-                  <span className="flex-shrink-0 w-6 h-6 rounded-full bg-[#d96857] text-white flex items-center justify-center text-sm font-medium">2</span>
-                  <span>Use filters to narrow down by category, room type, or price</span>
-                </li>
-                <li className="flex gap-3">
-                  <span className="flex-shrink-0 w-6 h-6 rounded-full bg-[#d96857] text-white flex items-center justify-center text-sm font-medium">3</span>
-                  <span>Click "Add to Project" on any product you like</span>
-                </li>
-                <li className="flex gap-3">
-                  <span className="flex-shrink-0 w-6 h-6 rounded-full bg-[#d96857] text-white flex items-center justify-center text-sm font-medium">4</span>
-                  <span>Select which project to add it to from the modal</span>
-                </li>
-                <li className="flex gap-3">
-                  <span className="flex-shrink-0 w-6 h-6 rounded-full bg-[#d96857] text-white flex items-center justify-center text-sm font-medium">5</span>
-                  <span>Continue browsing and adding more products</span>
-                </li>
-              </ol>
-            </div>
-          </div>
-        );
-
-      case 'upload-screenshots':
-        return (
-          <div className="space-y-6">
-            <h2 className="text-3xl font-bold text-[#2e2e2e]">Upload Your Design Screenshots</h2>
-            <p className="text-[#2e2e2e]/70 text-lg">
-              Show us how you've placed products in your space.
-            </p>
-
-            <div className="bg-gray-100 rounded-xl p-8 border border-[#2e2e2e]/10">
-              <p className="text-center text-[#2e2e2e]/50">Screenshot placeholder</p>
-              <p className="text-center text-sm text-[#2e2e2e]/40 mt-2">Screenshot upload area</p>
-            </div>
-
-            <div className="space-y-4">
-              <h3 className="text-xl font-semibold text-[#2e2e2e]">Upload Process:</h3>
-              <ol className="space-y-3 text-[#2e2e2e]/70">
-                <li className="flex gap-3">
-                  <span className="flex-shrink-0 w-6 h-6 rounded-full bg-[#d96857] text-white flex items-center justify-center text-sm font-medium">1</span>
-                  <span>Open your project from the Dashboard</span>
-                </li>
-                <li className="flex gap-3">
-                  <span className="flex-shrink-0 w-6 h-6 rounded-full bg-[#d96857] text-white flex items-center justify-center text-sm font-medium">2</span>
-                  <span>Go to the "Screenshots" tab</span>
-                </li>
-                <li className="flex gap-3">
-                  <span className="flex-shrink-0 w-6 h-6 rounded-full bg-[#d96857] text-white flex items-center justify-center text-sm font-medium">3</span>
-                  <span>Drag and drop images or click to browse</span>
-                </li>
-                <li className="flex gap-3">
-                  <span className="flex-shrink-0 w-6 h-6 rounded-full bg-[#d96857] text-white flex items-center justify-center text-sm font-medium">4</span>
-                  <span>Wait for upload to complete</span>
-                </li>
-                <li className="flex gap-3">
-                  <span className="flex-shrink-0 w-6 h-6 rounded-full bg-[#d96857] text-white flex items-center justify-center text-sm font-medium">5</span>
-                  <span>Your screenshots will show "Pending" status</span>
-                </li>
-              </ol>
-            </div>
-          </div>
-        );
-
-      case 'approval-process':
-        return (
-          <div className="space-y-6">
-            <h2 className="text-3xl font-bold text-[#2e2e2e]">Understanding the Approval Process</h2>
-            <p className="text-[#2e2e2e]/70 text-lg">
-              Learn what happens after you upload screenshots.
-            </p>
-
-            <div className="aspect-video bg-gray-100 rounded-xl flex items-center justify-center border border-[#2e2e2e]/10">
-              <div className="text-center space-y-2">
-                <CheckCircle className="w-16 h-16 mx-auto text-[#2e2e2e]/30" />
-                <p className="text-[#2e2e2e]/50">Approval process video will appear here</p>
-                <p className="text-sm text-[#2e2e2e]/40">YouTube embed placeholder</p>
-              </div>
-            </div>
-
-            <div className="bg-[#f8f7f4] rounded-xl p-6 space-y-4">
-              <h3 className="text-xl font-semibold text-[#2e2e2e]">Approval Timeline</h3>
+            <div className="bg-white rounded-xl p-6 border-2 border-dashed border-[#2e2e2e]/20">
               <div className="space-y-4">
-                <div className="flex gap-4">
-                  <div className="flex-shrink-0 w-12 h-12 rounded-full bg-yellow-100 flex items-center justify-center">
-                    <span className="text-yellow-600 font-semibold">1</span>
-                  </div>
-                  <div>
-                    <h4 className="font-medium text-[#2e2e2e]">Pending Review</h4>
-                    <p className="text-sm text-[#2e2e2e]/60">Your screenshots are queued for admin review</p>
+                <div className="flex items-center justify-between pb-3 border-b border-[#2e2e2e]/10">
+                  <h3 className="text-lg font-semibold text-[#2e2e2e]">Product Catalog</h3>
+                  <div className="flex gap-2">
+                    <div className="px-3 py-1 bg-gray-50 rounded-lg border border-[#2e2e2e]/10 text-xs text-[#2e2e2e]/60">Filter ▼</div>
+                    <div className="px-3 py-1 bg-gray-50 rounded-lg border border-[#2e2e2e]/10 text-xs text-[#2e2e2e]/60">Sort ▼</div>
                   </div>
                 </div>
-                <div className="flex gap-4">
-                  <div className="flex-shrink-0 w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center">
-                    <span className="text-blue-600 font-semibold">2</span>
-                  </div>
-                  <div>
-                    <h4 className="font-medium text-[#2e2e2e]">Under Review</h4>
-                    <p className="text-sm text-[#2e2e2e]/60">Admin is checking your design layout (24-48 hours)</p>
-                  </div>
+                <div className="grid grid-cols-3 gap-3">
+                  {[1, 2, 3].map((i) => (
+                    <div key={i} className="bg-gray-50 rounded-lg p-3 space-y-2">
+                      <div className="aspect-square bg-gray-200 rounded-lg"></div>
+                      <div className="h-3 bg-gray-200 rounded w-3/4"></div>
+                      <div className="h-3 bg-gray-200 rounded w-1/2"></div>
+                      <button className="w-full py-1.5 bg-[#d96857] text-white text-xs rounded-lg">Add to Project</button>
+                    </div>
+                  ))}
                 </div>
-                <div className="flex gap-4">
-                  <div className="flex-shrink-0 w-12 h-12 rounded-full bg-green-100 flex items-center justify-center">
-                    <span className="text-green-600 font-semibold">3</span>
-                  </div>
-                  <div>
-                    <h4 className="font-medium text-[#2e2e2e]">Approved</h4>
-                    <p className="text-sm text-[#2e2e2e]/60">Professional renders are created and available!</p>
-                  </div>
+                <p className="text-center text-sm text-[#2e2e2e]/40 pt-2">Screenshot: Product catalog with filters</p>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <h3 className="text-xl font-semibold text-[#2e2e2e]">Steps:</h3>
+              <ol className="space-y-3 text-[#2e2e2e]/70">
+                <li className="flex gap-3">
+                  <span className="flex-shrink-0 w-6 h-6 rounded-full bg-[#d96857] text-white flex items-center justify-center text-sm font-medium">1</span>
+                  <span>Browse the product catalog using filters.</span>
+                </li>
+                <li className="flex gap-3">
+                  <span className="flex-shrink-0 w-6 h-6 rounded-full bg-[#d96857] text-white flex items-center justify-center text-sm font-medium">2</span>
+                  <span>Select a product to view details.</span>
+                </li>
+                <li className="flex gap-3">
+                  <span className="flex-shrink-0 w-6 h-6 rounded-full bg-[#d96857] text-white flex items-center justify-center text-sm font-medium">3</span>
+                  <span>Click "Add to Project" and choose the relevant project and room.</span>
+                </li>
+                <li className="flex gap-3">
+                  <span className="flex-shrink-0 w-6 h-6 rounded-full bg-[#d96857] text-white flex items-center justify-center text-sm font-medium">4</span>
+                  <span>Repeat for all required products.</span>
+                </li>
+              </ol>
+            </div>
+
+            <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
+              <p className="text-sm text-blue-800">
+                <strong>Tip:</strong> Use filters to quickly find products by category, style, or price.
+              </p>
+            </div>
+          </div>
+        );
+
+      case 'review-approve':
+
+        return (
+          <div className="space-y-6">
+            <h2 className="text-3xl font-bold text-[#2e2e2e]">Review & Approve Designs</h2>
+            <p className="text-[#2e2e2e]/70 text-lg">
+              Preview your design layouts and ensure everything is as planned.
+            </p>
+
+            {/* Project Details Screenshot */}
+            <div className="bg-white rounded-xl p-6 border-2 border-dashed border-[#2e2e2e]/20">
+              <div className="space-y-4">
+                <div className="flex items-center justify-between pb-3 border-b border-[#2e2e2e]/10">
+                  <h3 className="text-lg font-semibold text-[#2e2e2e]">Living Room - Design Preview</h3>
+                  <div className="px-3 py-1 bg-yellow-100 text-yellow-700 text-xs rounded-full">Pending Review</div>
+                </div>
+                <div className="w-full flex justify-center py-2">
+                  <img
+                    src="/screenshots/project-details.png"
+                    alt="Project Details Screenshot"
+                    className="object-contain max-h-72 rounded-lg border"
+                  />
+                </div>
+                <div className="flex gap-3">
+                  <button className="flex-1 py-2 bg-green-600 text-white text-sm rounded-lg">✓ Approve Design</button>
+                  <button className="flex-1 py-2 bg-gray-200 text-[#2e2e2e] text-sm rounded-lg">Request Changes</button>
                 </div>
               </div>
+            </div>
+
+            <div className="space-y-4">
+              <h3 className="text-xl font-semibold text-[#2e2e2e]">Steps:</h3>
+              <ol className="space-y-3 text-[#2e2e2e]/70">
+                <li className="flex gap-3">
+                  <span className="flex-shrink-0 w-6 h-6 rounded-full bg-[#d96857] text-white flex items-center justify-center text-sm font-medium">1</span>
+                  <span>Open your project and navigate to the area/room.</span>
+                </li>
+                <li className="flex gap-3">
+                  <span className="flex-shrink-0 w-6 h-6 rounded-full bg-[#d96857] text-white flex items-center justify-center text-sm font-medium">2</span>
+                  <span>Review the design previews (screenshots).</span>
+                </li>
+                <li className="flex gap-3">
+                  <span className="flex-shrink-0 w-6 h-6 rounded-full bg-[#d96857] text-white flex items-center justify-center text-sm font-medium">3</span>
+                  <span>Approve the design or request changes as needed.</span>
+                </li>
+              </ol>
+            </div>
+
+            <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
+              <p className="text-sm text-blue-800">
+                <strong>Tip:</strong> Leave clear feedback when requesting changes for faster updates.
+              </p>
             </div>
           </div>
         );
@@ -253,36 +251,57 @@ export default function TutorialPage() {
       case 'view-renders':
         return (
           <div className="space-y-6">
-            <h2 className="text-3xl font-bold text-[#2e2e2e]">View Your Professional Renders</h2>
+            <h2 className="text-3xl font-bold text-[#2e2e2e]">View Renders</h2>
             <p className="text-[#2e2e2e]/70 text-lg">
-              Once approved, beautiful renders of your design will be available.
+              See high-quality 3D renders of your approved designs.
             </p>
 
-            <div className="bg-gray-100 rounded-xl p-8 border border-[#2e2e2e]/10">
-              <p className="text-center text-[#2e2e2e]/50">Screenshot placeholder</p>
-              <p className="text-center text-sm text-[#2e2e2e]/40 mt-2">Renders tab with images</p>
+            <div className="bg-white rounded-xl p-6 border-2 border-dashed border-[#2e2e2e]/20">
+              <div className="space-y-4">
+                <div className="flex items-center justify-between pb-3 border-b border-[#2e2e2e]/10">
+                  <h3 className="text-lg font-semibold text-[#2e2e2e]">Final 3D Renders</h3>
+                  <div className="px-3 py-1 bg-green-100 text-green-700 text-xs rounded-full">✓ Approved</div>
+                </div>
+                <div className="space-y-3">
+                  <div className="aspect-video bg-gradient-to-br from-blue-100 via-purple-100 to-pink-100 rounded-lg flex items-center justify-center">
+                    <span className="text-[#2e2e2e]/30 font-medium">High-Quality 3D Render</span>
+                  </div>
+                  <div className="flex gap-2">
+                    {[1, 2, 3].map((i) => (
+                      <div key={i} className="flex-1 aspect-video bg-gradient-to-br from-gray-200 to-gray-300 rounded-lg"></div>
+                    ))}
+                  </div>
+                </div>
+                <div className="flex gap-3">
+                  <button className="flex-1 py-2 bg-[#d96857] text-white text-sm rounded-lg">Download All</button>
+                  <button className="flex-1 py-2 bg-gray-200 text-[#2e2e2e] text-sm rounded-lg">Share</button>
+                </div>
+                <p className="text-center text-sm text-[#2e2e2e]/40 pt-2">Screenshot: 3D render gallery</p>
+              </div>
             </div>
 
             <div className="space-y-4">
-              <h3 className="text-xl font-semibold text-[#2e2e2e]">What You Can Do:</h3>
-              <ul className="space-y-2 text-[#2e2e2e]/70">
-                <li className="flex items-start gap-2">
-                  <span className="text-[#d96857] mt-1">•</span>
-                  <span>View high-resolution render images</span>
+              <h3 className="text-xl font-semibold text-[#2e2e2e]">Steps:</h3>
+              <ol className="space-y-3 text-[#2e2e2e]/70">
+                <li className="flex gap-3">
+                  <span className="flex-shrink-0 w-6 h-6 rounded-full bg-[#d96857] text-white flex items-center justify-center text-sm font-medium">1</span>
+                  <span>Go to the "Renders" tab in your project.</span>
                 </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-[#d96857] mt-1">•</span>
-                  <span>Zoom in to see details</span>
+                <li className="flex gap-3">
+                  <span className="flex-shrink-0 w-6 h-6 rounded-full bg-[#d96857] text-white flex items-center justify-center text-sm font-medium">2</span>
+                  <span>View the final 3D images for each area.</span>
                 </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-[#d96857] mt-1">•</span>
-                  <span>Download renders for your records</span>
+                <li className="flex gap-3">
+                  <span className="flex-shrink-0 w-6 h-6 rounded-full bg-[#d96857] text-white flex items-center justify-center text-sm font-medium">3</span>
+                  <span>Approve the renders or request adjustments.</span>
                 </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-[#d96857] mt-1">•</span>
-                  <span>Add all products to cart if you're ready to order</span>
-                </li>
-              </ul>
+              </ol>
+            </div>
+
+            <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
+              <p className="text-sm text-blue-800">
+                <strong>Tip:</strong> Download renders for presentations or client meetings.
+              </p>
             </div>
           </div>
         );
@@ -290,36 +309,55 @@ export default function TutorialPage() {
       case 'add-to-cart':
         return (
           <div className="space-y-6">
-            <h2 className="text-3xl font-bold text-[#2e2e2e]">Add Products to Cart</h2>
+            <h2 className="text-3xl font-bold text-[#2e2e2e]">Add to Cart</h2>
             <p className="text-[#2e2e2e]/70 text-lg">
-              Ready to purchase? Add your approved products to the cart.
+              Prepare your order by adding approved products to your cart.
             </p>
 
-            <div className="bg-gray-100 rounded-xl p-8 border border-[#2e2e2e]/10">
-              <p className="text-center text-[#2e2e2e]/50">Screenshot placeholder</p>
-              <p className="text-center text-sm text-[#2e2e2e]/40 mt-2">Add to cart button</p>
+            <div className="bg-white rounded-xl p-6 border-2 border-dashed border-[#2e2e2e]/20">
+              <div className="space-y-4">
+                <div className="flex items-center justify-between pb-3 border-b border-[#2e2e2e]/10">
+                  <h3 className="text-lg font-semibold text-[#2e2e2e]">Approved Products</h3>
+                  <button className="px-4 py-1.5 bg-[#d96857] text-white text-sm rounded-lg">Add All to Cart</button>
+                </div>
+                <div className="space-y-2">
+                  {[1, 2, 3].map((i) => (
+                    <div key={i} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                      <div className="w-16 h-16 bg-gray-200 rounded"></div>
+                      <div className="flex-1 space-y-1">
+                        <div className="h-3 bg-gray-200 rounded w-2/3"></div>
+                        <div className="h-3 bg-gray-200 rounded w-1/3"></div>
+                      </div>
+                      <button className="px-3 py-1.5 bg-[#d96857] text-white text-xs rounded-lg">Add to Cart</button>
+                    </div>
+                  ))}
+                </div>
+                <p className="text-center text-sm text-[#2e2e2e]/40 pt-2">Screenshot: Product list with add to cart buttons</p>
+              </div>
             </div>
 
             <div className="space-y-4">
-              <h3 className="text-xl font-semibold text-[#2e2e2e]">How to Add:</h3>
+              <h3 className="text-xl font-semibold text-[#2e2e2e]">Steps:</h3>
               <ol className="space-y-3 text-[#2e2e2e]/70">
                 <li className="flex gap-3">
                   <span className="flex-shrink-0 w-6 h-6 rounded-full bg-[#d96857] text-white flex items-center justify-center text-sm font-medium">1</span>
-                  <span>Go to the Renders tab in your approved project</span>
+                  <span>In your project, view the list of approved products.</span>
                 </li>
                 <li className="flex gap-3">
                   <span className="flex-shrink-0 w-6 h-6 rounded-full bg-[#d96857] text-white flex items-center justify-center text-sm font-medium">2</span>
-                  <span>Click "Add All to Cart" to add all products at once</span>
+                  <span>Select the products you wish to order.</span>
                 </li>
                 <li className="flex gap-3">
                   <span className="flex-shrink-0 w-6 h-6 rounded-full bg-[#d96857] text-white flex items-center justify-center text-sm font-medium">3</span>
-                  <span>Or add individual products from the Products tab</span>
-                </li>
-                <li className="flex gap-3">
-                  <span className="flex-shrink-0 w-6 h-6 rounded-full bg-[#d96857] text-white flex items-center justify-center text-sm font-medium">4</span>
-                  <span>Navigate to Cart page to review your items</span>
+                  <span>Click "Add to Cart" for each item.</span>
                 </li>
               </ol>
+            </div>
+
+            <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
+              <p className="text-sm text-blue-800">
+                <strong>Tip:</strong> Add all required products at once to streamline checkout.
+              </p>
             </div>
           </div>
         );
@@ -327,46 +365,57 @@ export default function TutorialPage() {
       case 'checkout':
         return (
           <div className="space-y-6">
-            <h2 className="text-3xl font-bold text-[#2e2e2e]">Complete Your Purchase</h2>
+            <h2 className="text-3xl font-bold text-[#2e2e2e]">Checkout</h2>
             <p className="text-[#2e2e2e]/70 text-lg">
-              Review your cart and proceed to secure checkout.
+              Place your order securely and confirm your purchase.
             </p>
 
-            <div className="bg-gray-100 rounded-xl p-8 border border-[#2e2e2e]/10">
-              <p className="text-center text-[#2e2e2e]/50">Screenshot placeholder</p>
-              <p className="text-center text-sm text-[#2e2e2e]/40 mt-2">Cart page with checkout button</p>
+            <div className="bg-white rounded-xl p-6 border-2 border-dashed border-[#2e2e2e]/20">
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold text-[#2e2e2e] pb-3 border-b border-[#2e2e2e]/10">Shopping Cart</h3>
+                <div className="space-y-2">
+                  {[1, 2].map((i) => (
+                    <div key={i} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                      <div className="w-14 h-14 bg-gray-200 rounded"></div>
+                      <div className="flex-1 space-y-1">
+                        <div className="h-3 bg-gray-200 rounded w-2/3"></div>
+                        <div className="h-3 bg-gray-200 rounded w-1/4"></div>
+                      </div>
+                      <div className="text-sm font-semibold text-[#2e2e2e]">₹12,500</div>
+                    </div>
+                  ))}
+                </div>
+                <div className="bg-[#f8f7f4] rounded-lg p-4 space-y-2">
+                  <div className="flex justify-between text-sm"><span>Subtotal</span><span>₹25,000</span></div>
+                  <div className="flex justify-between text-sm"><span>GST (18%)</span><span>₹4,500</span></div>
+                  <div className="flex justify-between font-semibold text-base pt-2 border-t border-[#2e2e2e]/10"><span>Total</span><span>₹29,500</span></div>
+                </div>
+                <button className="w-full py-3 bg-[#d96857] text-white font-medium rounded-lg">Proceed to Checkout</button>
+                <p className="text-center text-sm text-[#2e2e2e]/40 pt-2">Screenshot: Cart with checkout button</p>
+              </div>
             </div>
 
             <div className="space-y-4">
-              <h3 className="text-xl font-semibold text-[#2e2e2e]">Checkout Steps:</h3>
+              <h3 className="text-xl font-semibold text-[#2e2e2e]">Steps:</h3>
               <ol className="space-y-3 text-[#2e2e2e]/70">
                 <li className="flex gap-3">
                   <span className="flex-shrink-0 w-6 h-6 rounded-full bg-[#d96857] text-white flex items-center justify-center text-sm font-medium">1</span>
-                  <span>Review items in your cart</span>
+                  <span>Review your cart for accuracy.</span>
                 </li>
                 <li className="flex gap-3">
                   <span className="flex-shrink-0 w-6 h-6 rounded-full bg-[#d96857] text-white flex items-center justify-center text-sm font-medium">2</span>
-                  <span>Adjust quantities if needed</span>
+                  <span>Confirm quantities and delivery details.</span>
                 </li>
                 <li className="flex gap-3">
                   <span className="flex-shrink-0 w-6 h-6 rounded-full bg-[#d96857] text-white flex items-center justify-center text-sm font-medium">3</span>
-                  <span>Check the total amount (including GST)</span>
-                </li>
-                <li className="flex gap-3">
-                  <span className="flex-shrink-0 w-6 h-6 rounded-full bg-[#d96857] text-white flex items-center justify-center text-sm font-medium">4</span>
-                  <span>Click "Proceed to Checkout"</span>
-                </li>
-                <li className="flex gap-3">
-                  <span className="flex-shrink-0 w-6 h-6 rounded-full bg-[#d96857] text-white flex items-center justify-center text-sm font-medium">5</span>
-                  <span>Complete payment via Razorpay (secure payment gateway)</span>
+                  <span>Click "Checkout" and complete payment.</span>
                 </li>
               </ol>
             </div>
 
-            <div className="bg-green-50 border border-green-200 rounded-xl p-4">
-              <p className="text-sm text-green-800">
-                <strong>🔒 Secure Payment:</strong> All payments are processed through Razorpay, 
-                India's most trusted payment gateway. Your financial information is completely secure.
+            <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
+              <p className="text-sm text-blue-800">
+                <strong>Tip:</strong> Save your billing and shipping info for faster future orders.
               </p>
             </div>
           </div>
@@ -375,54 +424,115 @@ export default function TutorialPage() {
       case 'track-orders':
         return (
           <div className="space-y-6">
-            <h2 className="text-3xl font-bold text-[#2e2e2e]">Track Your Orders</h2>
+            <h2 className="text-3xl font-bold text-[#2e2e2e]">Track Orders</h2>
             <p className="text-[#2e2e2e]/70 text-lg">
-              Monitor your order status and delivery progress.
+              Monitor your order status and delivery progress in real time.
             </p>
 
-            <div className="bg-gray-100 rounded-xl p-8 border border-[#2e2e2e]/10">
-              <p className="text-center text-[#2e2e2e]/50">Screenshot placeholder</p>
-              <p className="text-center text-sm text-[#2e2e2e]/40 mt-2">Orders page</p>
-            </div>
-
-            <div className="space-y-4">
-              <h3 className="text-xl font-semibold text-[#2e2e2e]">Order Statuses:</h3>
-              <div className="space-y-3">
-                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                  <h4 className="font-medium text-yellow-900">Processing</h4>
-                  <p className="text-sm text-yellow-700 mt-1">Your order is being prepared</p>
+            <div className="bg-white rounded-xl p-6 border-2 border-dashed border-[#2e2e2e]/20">
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold text-[#2e2e2e] pb-3 border-b border-[#2e2e2e]/10">My Orders</h3>
+                <div className="space-y-3">
+                  {[
+                    { status: 'Delivered', color: 'green', order: '#ORD-001' },
+                    { status: 'Shipped', color: 'blue', order: '#ORD-002' },
+                    { status: 'Processing', color: 'yellow', order: '#ORD-003' }
+                  ].map((item, i) => (
+                    <div key={i} className="p-4 bg-gray-50 rounded-lg space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-semibold text-[#2e2e2e]">{item.order}</span>
+                        <div className={`px-3 py-1 bg-${item.color}-100 text-${item.color}-700 text-xs rounded-full`}>{item.status}</div>
+                      </div>
+                      <div className="h-2 bg-gray-200 rounded w-3/4"></div>
+                      <div className="h-2 bg-gray-200 rounded w-1/2"></div>
+                      <button className="text-[#d96857] text-sm font-medium">View Details →</button>
+                    </div>
+                  ))}
                 </div>
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                  <h4 className="font-medium text-blue-900">Shipped</h4>
-                  <p className="text-sm text-blue-700 mt-1">Your order is on its way</p>
-                </div>
-                <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                  <h4 className="font-medium text-green-900">Delivered</h4>
-                  <p className="text-sm text-green-700 mt-1">Your order has been delivered</p>
-                </div>
+                <p className="text-center text-sm text-[#2e2e2e]/40 pt-2">Screenshot: Order list with status tracking</p>
               </div>
             </div>
 
             <div className="space-y-4">
-              <h3 className="text-xl font-semibold text-[#2e2e2e]">What You Can Do:</h3>
-              <ul className="space-y-2 text-[#2e2e2e]/70">
-                <li className="flex items-start gap-2">
-                  <span className="text-[#d96857] mt-1">•</span>
-                  <span>View all your past and current orders</span>
+              <h3 className="text-xl font-semibold text-[#2e2e2e]">Steps:</h3>
+              <ol className="space-y-3 text-[#2e2e2e]/70">
+                <li className="flex gap-3">
+                  <span className="flex-shrink-0 w-6 h-6 rounded-full bg-[#d96857] text-white flex items-center justify-center text-sm font-medium">1</span>
+                  <span>Go to the "Orders" section from your dashboard.</span>
                 </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-[#d96857] mt-1">•</span>
-                  <span>Check payment status</span>
+                <li className="flex gap-3">
+                  <span className="flex-shrink-0 w-6 h-6 rounded-full bg-[#d96857] text-white flex items-center justify-center text-sm font-medium">2</span>
+                  <span>View the status of each order (Processing, Shipped, Delivered).</span>
                 </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-[#d96857] mt-1">•</span>
-                  <span>Track delivery status</span>
+                <li className="flex gap-3">
+                  <span className="flex-shrink-0 w-6 h-6 rounded-full bg-[#d96857] text-white flex items-center justify-center text-sm font-medium">3</span>
+                  <span>Click on an order for detailed tracking and updates.</span>
                 </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-[#d96857] mt-1">•</span>
-                  <span>Download invoices for your records</span>
+              </ol>
+            </div>
+
+            <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
+              <p className="text-sm text-blue-800">
+                <strong>Tip:</strong> Enable notifications to get real-time order updates.
+              </p>
+            </div>
+          </div>
+        );
+
+      case 'bills-invoices':
+        return (
+          <div className="space-y-6">
+            <h2 className="text-3xl font-bold text-[#2e2e2e]">Bills & Invoices</h2>
+            <p className="text-[#2e2e2e]/70 text-lg">
+              Easily access and download all your project-wise bills and invoices.
+            </p>
+
+            <div className="bg-white rounded-xl p-6 border-2 border-dashed border-[#2e2e2e]/20">
+              <div className="space-y-4">
+                <div className="flex items-center justify-between pb-3 border-b border-[#2e2e2e]/10">
+                  <h3 className="text-lg font-semibold text-[#2e2e2e]">Bills & Invoices</h3>
+                  <button className="px-3 py-1 bg-gray-200 text-[#2e2e2e] text-sm rounded-lg">Filter ▼</button>
+                </div>
+                <div className="space-y-2">
+                  {[1, 2, 3].map((i) => (
+                    <div key={i} className="flex items-center gap-3 p-4 bg-gray-50 rounded-lg">
+                      <div className="w-12 h-12 bg-[#d96857]/10 rounded flex items-center justify-center">
+                        <div className="text-[#d96857] text-xs font-bold">PDF</div>
+                      </div>
+                      <div className="flex-1 space-y-1">
+                        <div className="h-3 bg-gray-200 rounded w-2/3"></div>
+                        <div className="h-2 bg-gray-200 rounded w-1/3"></div>
+                      </div>
+                      <button className="px-4 py-1.5 bg-[#d96857] text-white text-xs rounded-lg">Download</button>
+                    </div>
+                  ))}
+                </div>
+                <p className="text-center text-sm text-[#2e2e2e]/40 pt-2">Screenshot: Invoice list with download options</p>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <h3 className="text-xl font-semibold text-[#2e2e2e]">Steps:</h3>
+              <ol className="space-y-3 text-[#2e2e2e]/70">
+                <li className="flex gap-3">
+                  <span className="flex-shrink-0 w-6 h-6 rounded-full bg-[#d96857] text-white flex items-center justify-center text-sm font-medium">1</span>
+                  <span>Open the "Bills & Invoices" tab in your dashboard or project.</span>
                 </li>
-              </ul>
+                <li className="flex gap-3">
+                  <span className="flex-shrink-0 w-6 h-6 rounded-full bg-[#d96857] text-white flex items-center justify-center text-sm font-medium">2</span>
+                  <span>Find invoices for each completed order.</span>
+                </li>
+                <li className="flex gap-3">
+                  <span className="flex-shrink-0 w-6 h-6 rounded-full bg-[#d96857] text-white flex items-center justify-center text-sm font-medium">3</span>
+                  <span>Download or print invoices as needed for your records.</span>
+                </li>
+              </ol>
+            </div>
+
+            <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
+              <p className="text-sm text-blue-800">
+                <strong>Tip:</strong> Keep your invoices organized for smooth accounting and GST compliance.
+              </p>
             </div>
           </div>
         );

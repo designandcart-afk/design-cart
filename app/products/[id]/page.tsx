@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState, useEffect } from "react";
+import Image from "next/image";
 import { useParams, useRouter } from "next/navigation";
 import toast from 'react-hot-toast';
 
@@ -244,46 +245,48 @@ export default function ProductDetailPage() {
         <Card className="overflow-hidden shadow-lg">
           <div className="grid md:grid-cols-2 gap-8 p-8">
             {/* Left: Image */}
-            <div>
-              {/* Show all images if available */}
-              <div className="aspect-square rounded-2xl overflow-hidden bg-[#f9f8f7] border border-[#2e2e2e]/10 flex items-center justify-center">
-                {/* Product Image Carousel */}
-                {images.length > 0 && (
-                  <div className="relative w-full h-full flex items-center justify-center">
-                    <img
-                      src={images[imageIndex % images.length]}
-                      alt={product.name + ' image ' + ((imageIndex % images.length) + 1)}
-                      className="object-cover rounded-xl border border-[#2e2e2e]/10 w-full h-full max-h-96"
-                    />
-                    {images.length > 1 && (
-                      <>
-                        <button
-                          onClick={() => setImageIndex((i) => (i - 1 + images.length) % images.length)}
-                          className="absolute left-2 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white rounded-full p-2 shadow"
-                          aria-label="Previous image"
-                        >
-                          <span className="text-2xl">&#8592;</span>
-                        </button>
-                        <button
-                          onClick={() => setImageIndex((i) => (i + 1) % images.length)}
-                          className="absolute right-2 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white rounded-full p-2 shadow"
-                          aria-label="Next image"
-                        >
-                          <span className="text-2xl">&#8594;</span>
-                        </button>
-                        <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1">
-                          {images.map((_, idx) => (
-                            <span
-                              key={idx}
-                              className={`inline-block w-2 h-2 rounded-full ${idx === (imageIndex % images.length) ? 'bg-[#d96857]' : 'bg-zinc-300'}`}
-                            />
-                          ))}
-                        </div>
-                      </>
-                    )}
-                  </div>
-                )}
-              </div>
+            <div className="flex flex-col items-start justify-start w-full md:w-auto">
+              {/* Product Image Carousel */}
+              {images.length > 0 && (
+                <div className="relative w-full max-w-xl rounded-2xl overflow-hidden bg-[#f9f8f7] border border-[#2e2e2e]/10">
+                  <Image
+                    src={images[imageIndex % images.length]}
+                    alt={product.name + ' image ' + ((imageIndex % images.length) + 1)}
+                    width={700}
+                    height={500}
+                    style={{ objectFit: 'contain', width: '100%', height: 'auto', maxHeight: '32rem', display: 'block' }}
+                    className="rounded-xl border border-[#2e2e2e]/10 bg-white"
+                    sizes="(max-width: 768px) 100vw, 50vw"
+                    priority={imageIndex === 0}
+                  />
+                  {images.length > 1 && (
+                    <>
+                      <button
+                        onClick={() => setImageIndex((i) => (i - 1 + images.length) % images.length)}
+                        className="absolute left-2 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white rounded-full p-2 shadow"
+                        aria-label="Previous image"
+                      >
+                        <span className="text-2xl">&#8592;</span>
+                      </button>
+                      <button
+                        onClick={() => setImageIndex((i) => (i + 1) % images.length)}
+                        className="absolute right-2 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white rounded-full p-2 shadow"
+                        aria-label="Next image"
+                      >
+                        <span className="text-2xl">&#8594;</span>
+                      </button>
+                      <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1">
+                        {images.map((_, idx) => (
+                          <span
+                            key={idx}
+                            className={`inline-block w-2 h-2 rounded-full ${idx === (imageIndex % images.length) ? 'bg-[#d96857]' : 'bg-zinc-300'}`}
+                          />
+                        ))}
+                      </div>
+                    </>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* Right: Info + Actions */}

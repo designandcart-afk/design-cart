@@ -245,6 +245,25 @@ export default function ProjectDetailPage() {
         ].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
         
         setBills(allBills);
+        
+        // Enrich estimates with payment status
+        if (estimates && paymentsData.data) {
+          const enrichedEstimates = estimates.map(est => {
+            const advancePayment = paymentsData.data.find(
+              p => p.estimate_id === est.id && p.payment_type === 'advance' && p.status === 'paid'
+            );
+            const balancePayment = paymentsData.data.find(
+              p => p.estimate_id === est.id && p.payment_type === 'balance' && p.status === 'paid'
+            );
+            return {
+              ...est,
+              advancePaid: !!advancePayment,
+              balancePaid: !!balancePayment
+            };
+          });
+          setQuotes(enrichedEstimates);
+        }
+        
         console.log('Loaded bills:', { payments: paymentsData.data, productBills: billsData.data });
       } catch (error) {
         console.error('Error in loadEstimates:', error);
@@ -1555,9 +1574,10 @@ export default function ProjectDetailPage() {
     setPaymentError(null);
 
     try {
+      // Use the amount already calculated and stored in currentEstimate
       const amount = paymentType === 'advance' 
-        ? Math.round(Number(currentEstimate.total_amount) * 0.3)
-        : Math.round(Number(currentEstimate.total_amount) * 0.7);
+        ? currentEstimate.advance_amount
+        : currentEstimate.remaining_amount;
 
       // Create payment order
       const response = await fetch(`/api/projects/${projectId}/create-design-payment`, {
@@ -3433,29 +3453,39 @@ export default function ProjectDetailPage() {
             ) : (
               <div className="space-y-3">
                 {quotes.map((quote) => {
-                  // Calculate payment amounts
-                  const totalAmount = Number(quote.total_amount) || 0;
-                  const advanceAmount = Math.round(totalAmount * 0.3);
-                  const remainingAmount = totalAmount - advanceAmount;
+                  // Use uuid id and final_amount (fallback to total_amount) from project_design_estimates
+                  const totalAmount = Number(quote.final_amount || quote.total_amount) || 0;
                   
+                  // For initial quote: advance is 30% of initial quote
+                  const advanceAmount = Math.round(totalAmount * 0.3);
+                  
+                  // For final quote: balance = final amount - advance already paid
+                  // Find the initial quote to get the advance paid amount
+                  const initialQuote = quotes.find(q => q.estimate_type === 'initial');
+                  const advancePaid = initialQuote && initialQuote.advancePaid 
+                    ? Math.round((Number(initialQuote.final_amount || initialQuote.total_amount) || 0) * 0.3)
+                    : 0;
+                  const balanceAmount = quote.estimate_type === 'final' 
+                    ? totalAmount - advancePaid
+                    : totalAmount - advanceAmount;
+
                   return (
-                    <div 
-                      key={quote.id} 
+                    <div
+                      key={quote.id}
                       className="bg-white border border-gray-200 rounded-2xl p-4 hover:border-[#d96857]/30 hover:shadow-md transition-all cursor-pointer group flex items-center justify-between"
                       onClick={async (e) => {
                         // Don't trigger if clicking on payment buttons
                         if ((e.target as HTMLElement).closest('.payment-actions')) return;
-                        
-                        console.log('Generating quote for:', { quoteId: quote.id, projectId });
+
+                        // Always use quote.id (uuid from project_design_estimates)
                         try {
-                          // Generate detailed quote PDF
                           const response = await fetch('/api/quote/generate', {
                             method: 'POST',
                             headers: {
                               'Content-Type': 'application/json',
                             },
                             body: JSON.stringify({
-                              quoteId: quote.id,
+                              quoteId: quote.id, // uuid
                               projectId: projectId
                             }),
                           });
@@ -3487,7 +3517,7 @@ export default function ProjectDetailPage() {
                         <div className="w-12 h-12 rounded-lg bg-[#d96857]/10 flex items-center justify-center group-hover:bg-[#d96857]/20 transition-colors">
                           <FileText className="w-6 h-6 text-[#d96857]" />
                         </div>
-                        
+
                         {/* Quote Details */}
                         <div>
                           <h3 className="font-medium text-[#2e2e2e] group-hover:text-[#d96857] transition-colors">
@@ -3501,13 +3531,13 @@ export default function ProjectDetailPage() {
                           </p>
                         </div>
                       </div>
-                      
+
                       {/* Right side: Payment Actions */}
                       {quote.status === 'active' && (
                         <div className="payment-actions flex items-center gap-3">
-                          {quote.estimate_type === 'initial' && (
+                          {quote.estimate_type === 'initial' && !quote.advancePaid && (
                             <div className="text-right">
-                              <button 
+                              <button
                                 className="bg-[#d96857] text-white px-6 py-2 rounded-lg text-sm font-medium hover:bg-[#c85745] transition-colors mb-1 block"
                                 onClick={(e) => {
                                   e.stopPropagation();
@@ -3526,25 +3556,45 @@ export default function ProjectDetailPage() {
                               </p>
                             </div>
                           )}
-                          {quote.estimate_type === 'final' && (
+                          {quote.estimate_type === 'initial' && quote.advancePaid && (
                             <div className="text-right">
-                              <button 
+                              <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-green-50 border border-green-200">
+                                <svg className="w-4 h-4 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                                </svg>
+                                <span className="text-sm font-medium text-green-700">Advance Paid</span>
+                              </div>
+                            </div>
+                          )}
+                          {quote.estimate_type === 'final' && !quote.balancePaid && (
+                            <div className="text-right">
+                              <button
                                 className="bg-[#d96857] text-white px-6 py-2 rounded-lg text-sm font-medium hover:bg-[#c85745] transition-colors mb-1 block"
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   setCurrentEstimate({
                                     ...quote,
-                                    remaining_amount: remainingAmount
+                                    remaining_amount: balanceAmount
                                   });
                                   setPaymentType('balance');
                                   setPaymentModalOpen(true);
                                 }}
                               >
-                                Pay Balance (70%)
+                                Pay Balance
                               </button>
                               <p className="text-xs text-[#2e2e2e]/60">
-                                ₹{remainingAmount.toLocaleString('en-IN')} to complete project
+                                ₹{balanceAmount.toLocaleString('en-IN')} (Final - Advance paid)
                               </p>
+                            </div>
+                          )}
+                          {quote.estimate_type === 'final' && quote.balancePaid && (
+                            <div className="text-right">
+                              <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-green-50 border border-green-200">
+                                <svg className="w-4 h-4 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                                </svg>
+                                <span className="text-sm font-medium text-green-700">Balance Paid</span>
+                              </div>
                             </div>
                           )}
                         </div>
@@ -3735,12 +3785,12 @@ export default function ProjectDetailPage() {
           <div className="p-6">
             <div className="text-center mb-6">
               <h3 className="text-xl font-semibold text-[#2e2e2e] mb-2">
-                {paymentType === 'advance' ? 'Advance Payment (30%)' : 'Balance Payment (70%)'}
+                {paymentType === 'advance' ? 'Advance Payment (30%)' : 'Balance Payment'}
               </h3>
               <p className="text-3xl font-bold text-[#d96857]">
-                ₹{(paymentType === 'advance' 
-                  ? Math.round(Number(currentEstimate.total_amount) * 0.3) 
-                  : Math.round(Number(currentEstimate.total_amount) * 0.7)
+                ₹{((paymentType === 'advance' 
+                  ? currentEstimate.advance_amount
+                  : currentEstimate.remaining_amount) || 0
                 ).toLocaleString('en-IN')}
               </p>
               <p className="text-sm text-[#2e2e2e]/60 mt-2">
@@ -3751,8 +3801,8 @@ export default function ProjectDetailPage() {
             <div className="bg-[#d96857]/10 border border-[#d96857]/20 rounded-lg p-4 mb-6">
               <p className="text-sm text-[#2e2e2e]">
                 {paymentType === 'advance' 
-                  ? 'This advance payment will unlock the initial design process and iterations.'
-                  : 'This final payment will complete your project and unlock all final deliverables.'
+                  ? 'This advance payment (30% of initial quote) will unlock the initial design process and iterations.'
+                  : 'This balance payment (Final quote amount - Advance paid) will complete your project and unlock all renders and final deliverables.'
                 }
               </p>
             </div>

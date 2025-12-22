@@ -160,11 +160,15 @@ export default function AreaDetailPage() {
         if (rendersData) setRenders(rendersData);
 
         // Fetch screenshots
-        const { data: screenshotsData } = await supabase
+        const { data: screenshotsData, error: screenshotsError } = await supabase
           .from('project_screenshots')
           .select('*')
           .eq('project_id', projectId)
           .eq('area', areaName);
+        
+        console.log('🔍 Fetching screenshots for:', { projectId, areaName });
+        console.log('📸 Screenshots data:', screenshotsData);
+        console.log('❌ Screenshots error:', screenshotsError);
         
         if (screenshotsData) setScreenshots(screenshotsData);
 
@@ -253,14 +257,19 @@ export default function AreaDetailPage() {
 
   // Get screenshots for this area
   const areaScreenshots = useMemo(() => {
+    console.log('🖼️ Computing areaScreenshots, isDemoProject:', isDemoProject, 'screenshots length:', screenshots.length);
+    console.log('📦 Raw screenshots:', screenshots);
+    
     if (isDemoProject) {
       return (demoRenders ?? []).filter((r) => r.projectId === projectId && r.area === areaName);
     }
     // Real projects from Supabase
-    return screenshots.map((s) => ({
+    const result = screenshots.map((s) => ({
       ...s,
       imageUrl: getDirectImageUrl(s.image_url) || s.image_url,
     }));
+    console.log('✅ Mapped screenshots result:', result);
+    return result;
   }, [isDemoProject, projectId, areaName, screenshots]);
 
   // Get products for this area - using the same logic as the main project page
