@@ -139,26 +139,34 @@ export default function TutorialPage() {
               Curate and assign products to each area of your project.
             </p>
 
-            <div className="bg-white rounded-xl p-6 border-2 border-dashed border-[#2e2e2e]/20">
-              <div className="space-y-4">
-                <div className="flex items-center justify-between pb-3 border-b border-[#2e2e2e]/10">
-                  <h3 className="text-lg font-semibold text-[#2e2e2e]">Product Catalog</h3>
-                  <div className="flex gap-2">
-                    <div className="px-3 py-1 bg-gray-50 rounded-lg border border-[#2e2e2e]/10 text-xs text-[#2e2e2e]/60">Filter ▼</div>
-                    <div className="px-3 py-1 bg-gray-50 rounded-lg border border-[#2e2e2e]/10 text-xs text-[#2e2e2e]/60">Sort ▼</div>
+            {/* Product Catalog Screenshots */}
+            <div className="space-y-6">
+              {/* Main Add Products Interface */}
+              <div className="bg-white rounded-xl p-6 border-2 border-dashed border-[#2e2e2e]/20">
+                <div className="space-y-4">
+                  <div className="w-full flex justify-center">
+                    <img
+                      src="/screenshots/add-products.png"
+                      alt="Add Products Screenshot"
+                      className="object-contain max-h-96 rounded-lg border shadow-sm"
+                    />
                   </div>
+                  <p className="text-center text-sm text-[#2e2e2e]/40 pt-2">Screenshot: Product selection interface</p>
                 </div>
-                <div className="grid grid-cols-3 gap-3">
-                  {[1, 2, 3].map((i) => (
-                    <div key={i} className="bg-gray-50 rounded-lg p-3 space-y-2">
-                      <div className="aspect-square bg-gray-200 rounded-lg"></div>
-                      <div className="h-3 bg-gray-200 rounded w-3/4"></div>
-                      <div className="h-3 bg-gray-200 rounded w-1/2"></div>
-                      <button className="w-full py-1.5 bg-[#d96857] text-white text-xs rounded-lg">Add to Project</button>
-                    </div>
-                  ))}
+              </div>
+
+              {/* Product Catalog Browser */}
+              <div className="bg-white rounded-xl p-6 border-2 border-dashed border-[#2e2e2e]/20">
+                <div className="space-y-4">
+                  <div className="w-full flex justify-center">
+                    <img
+                      src="/screenshots/product-catalog.png"
+                      alt="Product Catalog Screenshot"
+                      className="object-contain max-h-96 rounded-lg border shadow-sm"
+                    />
+                  </div>
+                  <p className="text-center text-sm text-[#2e2e2e]/40 pt-2">Screenshot: Product catalog with filters and categories</p>
                 </div>
-                <p className="text-center text-sm text-[#2e2e2e]/40 pt-2">Screenshot: Product catalog with filters</p>
               </div>
             </div>
 
@@ -201,24 +209,17 @@ export default function TutorialPage() {
               Preview your design layouts and ensure everything is as planned.
             </p>
 
-            {/* Project Details Screenshot */}
+            {/* Review & Approve Screenshot */}
             <div className="bg-white rounded-xl p-6 border-2 border-dashed border-[#2e2e2e]/20">
               <div className="space-y-4">
-                <div className="flex items-center justify-between pb-3 border-b border-[#2e2e2e]/10">
-                  <h3 className="text-lg font-semibold text-[#2e2e2e]">Living Room - Design Preview</h3>
-                  <div className="px-3 py-1 bg-yellow-100 text-yellow-700 text-xs rounded-full">Pending Review</div>
-                </div>
-                <div className="w-full flex justify-center py-2">
+                <div className="w-full flex justify-center">
                   <img
-                    src="/screenshots/project-details.png"
-                    alt="Project Details Screenshot"
-                    className="object-contain max-h-72 rounded-lg border"
+                    src="/screenshots/review-approve.png"
+                    alt="Review & Approve Screenshot"
+                    className="object-contain max-h-96 rounded-lg border shadow-sm"
                   />
                 </div>
-                <div className="flex gap-3">
-                  <button className="flex-1 py-2 bg-green-600 text-white text-sm rounded-lg">✓ Approve Design</button>
-                  <button className="flex-1 py-2 bg-gray-200 text-[#2e2e2e] text-sm rounded-lg">Request Changes</button>
-                </div>
+                <p className="text-center text-sm text-[#2e2e2e]/40 pt-2">Screenshot: Design review and approval interface</p>
               </div>
             </div>
 
