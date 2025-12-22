@@ -17,6 +17,14 @@ async function checkDatabase() {
   console.log('Checking database schema...');
   
   try {
+    // Check orders table - this is crucial for cart payment functionality
+    const { data: orders, error: ordersError } = await supabase
+      .from('orders')
+      .select('*')
+      .limit(1);
+    
+    console.log('Orders query result:', { orders, ordersError });
+    
     // First, try to query the products table
     const { data: products, error: productsError } = await supabase
       .from('products')

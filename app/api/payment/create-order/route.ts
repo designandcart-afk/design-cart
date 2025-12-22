@@ -6,6 +6,7 @@ import { createClient } from '@supabase/supabase-js';
 export const dynamic = 'force-dynamic';
 
 export async function POST(req: NextRequest) {
+  console.log('🚀 Create order API called');
   try {
     const { 
       amount, 
@@ -19,19 +20,46 @@ export async function POST(req: NextRequest) {
       taxRate = 0
     } = await req.json();
 
+    console.log('📊 Request data:', { amount, currency, itemsCount: items?.length, projectIds });
+
+    // Validate required fields
+    if (!amount || amount <= 0) {
+      console.error('❌ Invalid amount:', amount);
+      return NextResponse.json(
+        { error: 'Invalid amount' },
+        { status: 400 }
+      );
+    }
+
+    if (!items || !Array.isArray(items) || items.length === 0) {
+      console.error('❌ Invalid items array:', items);
+      return NextResponse.json(
+        { error: 'No items provided' },
+        { status: 400 }
+      );
+    }
+
     // Get authorization header
     const authHeader = req.headers.get('authorization');
     
     if (!authHeader) {
+      console.error('❌ No authorization header provided');
       return NextResponse.json(
         { error: 'Unauthorized - No auth header' },
         { status: 401 }
       );
     }
 
+    console.log('🔑 Authorization header present');
+
     // Create Supabase client with the auth token
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
     const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+    
+    console.log('🔧 Supabase config:', { 
+      urlExists: !!supabaseUrl, 
+      keyExists: !!supabaseKey 
+    });
     
     const supabase = createClient(supabaseUrl, supabaseKey, {
       global: {
@@ -42,31 +70,43 @@ export async function POST(req: NextRequest) {
     });
 
     // Get current user
+    console.log('👤 Getting user from auth token...');
     const { data: { user }, error: userError } = await supabase.auth.getUser();
     
     if (userError || !user) {
-      console.error('Auth error:', userError);
+      console.error('❌ Auth error:', userError);
       return NextResponse.json(
         { error: 'Unauthorized - Invalid token' },
         { status: 401 }
       );
     }
 
+    console.log('✅ User authenticated:', user.id);
+
     // Validate Razorpay credentials
+    console.log('🏦 Checking Razorpay credentials...');
     if (!process.env.RAZORPAY_KEY_ID || !process.env.RAZORPAY_KEY_SECRET) {
+      console.error('❌ Missing Razorpay credentials:', {
+        keyId: !!process.env.RAZORPAY_KEY_ID,
+        keySecret: !!process.env.RAZORPAY_KEY_SECRET
+      });
       return NextResponse.json(
         { error: 'Payment gateway not configured' },
         { status: 500 }
       );
     }
 
+    console.log('✅ Razorpay credentials found');
+
     // Initialize Razorpay
+    console.log('💳 Initializing Razorpay...');
     const razorpay = new Razorpay({
       key_id: process.env.RAZORPAY_KEY_ID,
       key_secret: process.env.RAZORPAY_KEY_SECRET,
     });
 
     // Create Razorpay order
+    console.log('📋 Creating Razorpay order with amount:', amount * 100);
     const order = await razorpay.orders.create({
       amount: amount * 100, // Convert to paise (smallest currency unit)
       currency,
@@ -75,6 +115,8 @@ export async function POST(req: NextRequest) {
         projectIds: JSON.stringify(projectIds || []),
       },
     });
+
+    console.log('✅ Razorpay order created:', order.id);
 
     // Group items by project
     console.log('📦 Received items:', JSON.stringify(items, null, 2));
@@ -113,7 +155,7 @@ export async function POST(req: NextRequest) {
     console.log(`🔨 Creating ${projectOrders.length} separate orders...`);
     
     for (const projectOrder of projectOrders) {
-      console.log(`Creating order for project ${projectOrder.projectId}...`);
+      console.log(`📝 Creating order for project ${projectOrder.projectId}...`);
       
       const { data: dbOrder, error: dbError } = await supabase
         .from('orders')
@@ -135,9 +177,9 @@ export async function POST(req: NextRequest) {
         .single();
 
       if (dbError) {
-        console.error('Database error:', dbError);
+        console.error('❌ Database error creating order:', dbError);
         return NextResponse.json(
-          { error: 'Failed to create order' },
+          { error: `Failed to create order: ${dbError.message}` },
           { status: 500 }
         );
       }
@@ -146,7 +188,7 @@ export async function POST(req: NextRequest) {
       dbOrders.push(dbOrder);
     }
 
-    console.log(`✅ Successfully created ${dbOrders.length} orders:`, dbOrders.map(o => o.id));
+    console.log(`🎉 Successfully created ${dbOrders.length} orders:`, dbOrders.map(o => o.id));
 
     return NextResponse.json({
       orderId: order.id,
@@ -155,7 +197,12 @@ export async function POST(req: NextRequest) {
       dbOrderIds: dbOrders.map(o => o.id), // Return all order IDs
     });
   } catch (error: any) {
-    console.error('Create order error:', error);
+    console.error('💥 Create order error:', error);
+    console.error('Error details:', {
+      message: error.message,
+      stack: error.stack,
+      name: error.name
+    });
     return NextResponse.json(
       { error: error.message || 'Failed to create order' },
       { status: 500 }
