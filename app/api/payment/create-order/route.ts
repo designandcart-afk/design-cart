@@ -130,13 +130,28 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    console.log('✅ Razorpay credentials found');
+    // Validate Razorpay key format
+    const keyId = process.env.RAZORPAY_KEY_ID;
+    const keySecret = process.env.RAZORPAY_KEY_SECRET;
+    
+    if (!keyId.startsWith('rzp_')) {
+      console.error('❌ Invalid Razorpay key ID format:', keyId.substring(0, 8) + '...');
+      return NextResponse.json(
+        { error: 'Invalid payment gateway configuration' },
+        { status: 500 }
+      );
+    }
+
+    console.log('✅ Razorpay credentials found and validated:', {
+      keyId: keyId.substring(0, 12) + '...',
+      keyType: keyId.includes('_live_') ? 'LIVE' : 'TEST'
+    });
 
     // Initialize Razorpay
     console.log('💳 Initializing Razorpay...');
     const razorpay = new Razorpay({
-      key_id: process.env.RAZORPAY_KEY_ID,
-      key_secret: process.env.RAZORPAY_KEY_SECRET,
+      key_id: keyId,
+      key_secret: keySecret,
     });
 
     // Create Razorpay order
@@ -153,9 +168,31 @@ export async function POST(req: NextRequest) {
       });
       console.log('✅ Razorpay order created:', order.id);
     } catch (razorpayError: any) {
-      console.error('❌ Razorpay order creation failed:', razorpayError);
+      console.error('❌ Razorpay order creation failed:', {
+        error: razorpayError,
+        message: razorpayError?.message,
+        description: razorpayError?.description,
+        field: razorpayError?.field,
+        source: razorpayError?.source,
+        step: razorpayError?.step,
+        reason: razorpayError?.reason,
+        metadata: razorpayError?.metadata
+      });
+      
+      // Try to extract meaningful error message
+      let errorMessage = 'Unknown payment gateway error';
+      if (razorpayError?.description) {
+        errorMessage = razorpayError.description;
+      } else if (razorpayError?.message) {
+        errorMessage = razorpayError.message;
+      } else if (typeof razorpayError === 'string') {
+        errorMessage = razorpayError;
+      } else if (razorpayError?.error?.description) {
+        errorMessage = razorpayError.error.description;
+      }
+      
       return NextResponse.json(
-        { error: `Payment gateway error: ${razorpayError.message}` },
+        { error: `Payment gateway error: ${errorMessage}` },
         { status: 500 }
       );
     }
