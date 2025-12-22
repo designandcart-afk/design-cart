@@ -58,8 +58,17 @@ export async function POST(req: NextRequest) {
     
     console.log('🔧 Supabase config:', { 
       urlExists: !!supabaseUrl, 
-      keyExists: !!supabaseKey 
+      keyExists: !!supabaseKey,
+      urlStart: supabaseUrl?.substring(0, 20) + '...'
     });
+
+    if (!supabaseUrl || !supabaseKey) {
+      console.error('❌ Missing Supabase environment variables');
+      return NextResponse.json(
+        { error: 'Database configuration missing' },
+        { status: 500 }
+      );
+    }
     
     const supabase = createClient(supabaseUrl, supabaseKey, {
       global: {
@@ -82,6 +91,31 @@ export async function POST(req: NextRequest) {
     }
 
     console.log('✅ User authenticated:', user.id);
+
+    // Test database access by checking if user can read from orders table
+    console.log('🔍 Testing database access...');
+    try {
+      const { data: testOrders, error: testError } = await supabase
+        .from('orders')
+        .select('id')
+        .eq('user_id', user.id)
+        .limit(1);
+        
+      if (testError) {
+        console.error('❌ Database access test failed:', testError);
+        return NextResponse.json(
+          { error: `Database access error: ${testError.message}` },
+          { status: 500 }
+        );
+      }
+      console.log('✅ Database access test passed');
+    } catch (dbTestError: any) {
+      console.error('❌ Database test exception:', dbTestError);
+      return NextResponse.json(
+        { error: `Database connection failed: ${dbTestError.message}` },
+        { status: 500 }
+      );
+    }
 
     // Validate Razorpay credentials
     console.log('🏦 Checking Razorpay credentials...');
@@ -107,16 +141,24 @@ export async function POST(req: NextRequest) {
 
     // Create Razorpay order
     console.log('📋 Creating Razorpay order with amount:', amount * 100);
-    const order = await razorpay.orders.create({
-      amount: amount * 100, // Convert to paise (smallest currency unit)
-      currency,
-      receipt: `receipt_${Date.now()}`,
-      notes: {
-        projectIds: JSON.stringify(projectIds || []),
-      },
-    });
-
-    console.log('✅ Razorpay order created:', order.id);
+    let order;
+    try {
+      order = await razorpay.orders.create({
+        amount: amount * 100, // Convert to paise (smallest currency unit)
+        currency,
+        receipt: `receipt_${Date.now()}`,
+        notes: {
+          projectIds: JSON.stringify(projectIds || []),
+        },
+      });
+      console.log('✅ Razorpay order created:', order.id);
+    } catch (razorpayError: any) {
+      console.error('❌ Razorpay order creation failed:', razorpayError);
+      return NextResponse.json(
+        { error: `Payment gateway error: ${razorpayError.message}` },
+        { status: 500 }
+      );
+    }
 
     // Group items by project
     console.log('📦 Received items:', JSON.stringify(items, null, 2));
@@ -171,7 +213,7 @@ export async function POST(req: NextRequest) {
           currency: currency,
           status: 'pending',
           items: projectOrder.items,
-          project_ids: [projectOrder.projectId], // Single project per order
+          project_ids: [projectOrder.projectId.toString()], // Convert UUID to string
         })
         .select()
         .single();
