@@ -1612,9 +1612,14 @@ export default function ProjectDetailPage() {
         });
       }
 
+      // Check if Razorpay key is available
+      if (!process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID) {
+        throw new Error('Razorpay configuration missing. Please contact support.');
+      }
+
       // Initialize Razorpay payment
       const options = {
-        key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || 'rzp_test_key', // Use your test key
+        key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
         amount: data.amount,
         currency: data.currency,
         order_id: data.razorpayOrderId,

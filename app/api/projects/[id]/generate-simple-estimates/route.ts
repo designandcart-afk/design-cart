@@ -18,12 +18,13 @@ export async function POST(
     const projectId = params.id;
     console.log('Generating simple estimates for project:', projectId);
 
-    // Create 3 basic estimates
+    // Create 3 basic estimates with scope field
     const estimates = [
       {
         project_id: projectId,
         estimate_number: 'EST-SIMPLE-001',
         estimate_type: 'rough',
+        scope: 'Concept Design', // Add required scope field
         areas_count: 1,
         iterations_count: 2,
         options_count: 5,
@@ -35,6 +36,7 @@ export async function POST(
         project_id: projectId,
         estimate_number: 'EST-SIMPLE-002',
         estimate_type: 'initial',
+        scope: 'Detailed Design', // Add required scope field
         areas_count: 1,
         iterations_count: 3,
         options_count: 8,
@@ -46,6 +48,7 @@ export async function POST(
         project_id: projectId,
         estimate_number: 'EST-SIMPLE-003',
         estimate_type: 'final',
+        scope: 'Complete Design Package', // Add required scope field
         areas_count: 1,
         iterations_count: 3,
         options_count: 10,
