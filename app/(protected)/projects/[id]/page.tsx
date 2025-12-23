@@ -28,6 +28,19 @@ declare global {
 }
 import { meetingService } from "@/lib/meetingService";
 
+// Generate UUID for messages
+const generateUUID = () => {
+  if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+    return crypto.randomUUID();
+  }
+  // Fallback for older browsers
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+    const r = Math.random() * 16 | 0;
+    const v = c === 'x' ? r : (r & 0x3 | 0x8);
+    return v.toString(16);
+  });
+};
+
 // Lazy load heavy components for better initial load performance
 const AreaCard = lazy(() => import("@/components/project/AreaCard"));
 const ProductsList = lazy(() => import("@/components/project/ProductsList"));
@@ -134,18 +147,36 @@ export default function ProjectDetailPage() {
   const handleDeleteChatMessage = async (messageId: string) => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      if (!user) {
+        setChatError('Please log in to delete messages');
+        return;
+      }
 
-      // Delete from database
+      // First, fetch the message to see its sender_id
+      const { data: msgData } = await supabase
+        .from('project_chat_messages')
+        .select('sender_id, sender_type')
+        .eq('id', messageId)
+        .single();
+
+      console.log('🔍 Project Detail Chat - Deleting message:', {
+        messageId,
+        currentUserId: user.id,
+        messageSenderId: msgData?.sender_id,
+        messageSenderType: msgData?.sender_type,
+        willMatch: msgData?.sender_id === user.id || msgData?.sender_id === null
+      });
+
+      // Delete from database - Only delete if sender_id matches current user
       const { error } = await supabase
         .from('project_chat_messages')
         .delete()
         .eq('id', messageId)
-        .eq('sender_id', user.id);
+        .eq('sender_id', user.id); // Only delete own messages
 
       if (error) {
-        console.error('Error deleting message:', error);
-        setChatError('Failed to delete message');
+        console.error('❌ Error deleting message:', error);
+        setChatError('Failed to delete message. You can only delete your own messages.');
         return;
       }
 
@@ -153,7 +184,7 @@ export default function ProjectDetailPage() {
       setMessages(prev => prev.filter(m => m.id !== messageId));
       setDeleteChatMessage(null);
     } catch (err) {
-      console.error('Error deleting message:', err);
+      console.error('❌ Error deleting message:', err);
       setChatError('Failed to delete message');
     }
   };
@@ -690,7 +721,7 @@ export default function ProjectDetailPage() {
     // Save the change request as a chat message
     if (changeNotes.trim() && projectId) {
       const msg: StorageChatMessage = {
-        id: `m_${Date.now()}`,
+        id: generateUUID(),
         projectId,
         sender: "designer",
         text: `🔄 Change requested for ${area} - ${type}:\n${changeNotes}`,
@@ -1170,7 +1201,7 @@ export default function ProjectDetailPage() {
     
     try {
       const msg: StorageChatMessage = {
-        id: `m_${Date.now()}`,
+        id: generateUUID(), // Use proper UUID
         projectId,
         sender: isSystemMessage ? "system" : "client", // System for notifications, client for regular messages
         text: messageText.trim(),
@@ -1226,7 +1257,7 @@ export default function ProjectDetailPage() {
       setIsLoadingChat(true);
 
       const meetingInfo = {
-        id: `meet_${Date.now()}`,
+        id: generateUUID(),
         projectId: project.id,
         date: meetingDate,
         time: meetingTime,
@@ -1941,7 +1972,7 @@ export default function ProjectDetailPage() {
                         <div className="relative">
                           <img
                             src={areaRenders[activeSlides[area]?.renders || 0]?.imageUrl}
-                            className="w-full h-[400px] object-cover cursor-pointer"
+                            className="w-full h-[400px] object-contain cursor-pointer"
                             alt="render"
                             loading="lazy"
                             onClick={() => openLightbox(area, 'renders', activeSlides[area]?.renders || 0)}
@@ -2008,7 +2039,7 @@ export default function ProjectDetailPage() {
                         <div className="relative">
                           <img
                             src={areaScreens[activeSlides[area]?.screenshots || 0]?.imageUrl}
-                            className="w-full h-[400px] object-cover cursor-pointer"
+                            className="w-full h-[400px] object-contain cursor-pointer"
                             alt="screenshot"
                             loading="lazy"
                             onClick={() => openLightbox(area, 'screenshots', activeSlides[area]?.screenshots || 0)}

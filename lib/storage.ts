@@ -156,6 +156,7 @@ class Storage {
       }
 
       const insertData: any = {
+        id: message.id, // Use the UUID passed from the client
         project_id: message.projectId,
         sender_type: senderType,
         sender_id: senderId,

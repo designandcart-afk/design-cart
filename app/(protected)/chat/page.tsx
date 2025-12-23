@@ -31,6 +31,19 @@ type ChatMsg = {
 
 const AGENT_NAME = "Agent";
 
+// Generate UUID for messages
+const generateUUID = () => {
+  if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+    return crypto.randomUUID();
+  }
+  // Fallback for older browsers
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+    const r = Math.random() * 16 | 0;
+    const v = c === 'x' ? r : (r & 0x3 | 0x8);
+    return v.toString(16);
+  });
+};
+
 export default function chatPage() {
   const { projects } = useProjects();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -118,7 +131,7 @@ export default function chatPage() {
       }));
 
       const msg: ChatMessage = {
-        id: `m_${Date.now()}`,
+        id: generateUUID(), // Use proper UUID
         projectId: activeProjectId,
         sender: "client",
         text: text.trim(),
@@ -175,7 +188,7 @@ export default function chatPage() {
       setIsLoading(true);
 
       const meetingInfo = {
-        id: `meeting_${Date.now()}`,
+        id: generateUUID(),
         projectId: activeProjectId,
         date: meetingDate,
         time: meetingTime,
@@ -205,18 +218,36 @@ export default function chatPage() {
   async function deleteMessage(messageId: string) {
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      if (!user) {
+        setError('Please log in to delete messages');
+        return;
+      }
 
-      // Delete from database
+      // First, fetch the message to see its sender_id
+      const { data: msgData } = await supabase
+        .from('project_chat_messages')
+        .select('sender_id, sender_type')
+        .eq('id', messageId)
+        .single();
+
+      console.log('🔍 Navigation Chat - Deleting message:', {
+        messageId,
+        currentUserId: user.id,
+        messageSenderId: msgData?.sender_id,
+        messageSenderType: msgData?.sender_type,
+        willMatch: msgData?.sender_id === user.id || msgData?.sender_id === null
+      });
+
+      // Delete from database - Only delete if sender_id matches current user
       const { error } = await supabase
         .from('project_chat_messages')
         .delete()
         .eq('id', messageId)
-        .eq('sender_id', user.id);
+        .eq('sender_id', user.id); // Only delete own messages
 
       if (error) {
-        console.error('Error deleting message:', error);
-        setError('Failed to delete message');
+        console.error('❌ Error deleting message:', error);
+        setError('Failed to delete message. You can only delete your own messages.');
         return;
       }
 
@@ -224,7 +255,7 @@ export default function chatPage() {
       setMessages(prev => prev.filter(m => m.id !== messageId));
       setDeleteConfirm(null);
     } catch (err) {
-      console.error('Error deleting message:', err);
+      console.error('❌ Error deleting message:', err);
       setError('Failed to delete message');
     }
   }

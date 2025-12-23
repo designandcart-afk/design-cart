@@ -423,7 +423,7 @@ export default function AreaDetailPage() {
               <div className="relative rounded-2xl overflow-hidden bg-[#f7f4f2] border border-gray-200 flex-1 flex items-center justify-center">
                 <img
                   src={currentImages[currentIndex]?.imageUrl}
-                  className={`w-full h-full object-cover cursor-pointer ${
+                  className={`w-full h-full object-contain cursor-pointer ${
                     activeTab === 'renders' && !isDemoProject && !paymentStatus?.rendersUnlocked ? 'blur-md' : ''
                   }`}
                   alt={activeTab}
