@@ -19,6 +19,7 @@ import CenterModal from "@/components/CenterModal";
 import ChatMessage from "@/components/chat/ChatMessage";
 import { storage, type ChatMessage as StorageChatMessage } from "@/lib/storage";
 import { uploadFiles, UploadError, type UploadedFile } from "@/lib/uploadAdapter";
+import toast from 'react-hot-toast';
 
 // Razorpay type declaration
 declare global {
@@ -51,7 +52,7 @@ export default function ProjectDetailPage() {
   const projectId = params?.id as string;
   const router = useRouter();
 
-  const { getProject, deleteProject: deleteProjectFromContext } = useProjects();
+  const { projects, getProject, deleteProject: deleteProjectFromContext, updateProject } = useProjects();
   const project = useMemo(() => {
     // Prefer project from context (real/demo), fallback to seeded demoProjects
     return getProject(projectId) ?? (demoProjects ?? []).find((p) => p.id === projectId);
@@ -109,9 +110,6 @@ export default function ProjectDetailPage() {
   const [rendersUnlocked, setRendersUnlocked] = useState(false);
   const [finalFilesUnlocked, setFinalFilesUnlocked] = useState(false);
   const [generatingEstimate, setGeneratingEstimate] = useState(false);
-
-  // Projects context hook - must be called early
-  const { updateProject } = useProjects();
 
   // Function to generate estimates - TEMPORARY SIMPLE VERSION
   const handleGenerateEstimate = async () => {
@@ -579,6 +577,17 @@ export default function ProjectDetailPage() {
   const [addingArea, setAddingArea] = useState(false);
   const [newAreaName, setNewAreaName] = useState("");
   const [deletingArea, setDeletingArea] = useState<string | null>(null);
+
+  // Project edit state
+  const [editingProject, setEditingProject] = useState(false);
+  const [editProjectData, setEditProjectData] = useState({
+    name: '',
+    address: '',
+    scope: '',
+    notes: '',
+    pincode: ''
+  });
+  const [isUpdatingProject, setIsUpdatingProject] = useState(false);
 
   // Delete confirmation
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -1382,6 +1391,75 @@ export default function ProjectDetailPage() {
     setDeletingArea(null);
   };
 
+  // Handle opening edit project modal
+  const handleOpenEditProject = () => {
+    setEditProjectData({
+      name: project.name || '',
+      address: project.address || '',
+      scope: project.scope || '',
+      notes: project.notes || '',
+      pincode: project.pincode || ''
+    });
+    setEditingProject(true);
+  };
+
+  // Handle updating project details
+  const handleUpdateProject = async () => {
+    if (!editProjectData.name.trim()) {
+      toast.error('Project name is required');
+      return;
+    }
+
+    const newName = editProjectData.name.trim().toLowerCase();
+    const duplicateExists = projects.some(p => p.id !== project.id && (p.name || '').trim().toLowerCase() === newName);
+    if (duplicateExists) {
+      toast.error('A project with this name already exists. Please choose a different name.');
+      return;
+    }
+
+    setIsUpdatingProject(true);
+    
+    try {
+      // Update local context first for immediate UI feedback
+      updateProject(project.id, {
+        name: editProjectData.name.trim(),
+        address: editProjectData.address.trim() || undefined,
+        scope: editProjectData.scope.trim() || undefined,
+        notes: editProjectData.notes.trim() || undefined,
+        pincode: editProjectData.pincode.trim() || undefined
+      });
+
+      // Update Supabase if not a demo project
+      if (!isDemoProject) {
+        const { error } = await supabase
+          .from('projects')
+          .update({
+            project_name: editProjectData.name.trim(),
+            address_full: editProjectData.address.trim() || null,
+            scope_of_work: editProjectData.scope.trim() || null,
+            notes: editProjectData.notes.trim() || null,
+            pincode: editProjectData.pincode.trim() || null
+          })
+          .eq('id', project.id);
+
+        if (error) {
+          console.error('Error updating project in Supabase:', error);
+          toast.error('Failed to update project');
+          setIsUpdatingProject(false);
+          return;
+        }
+      }
+
+      toast.success('Project updated successfully');
+      setEditingProject(false);
+    } catch (error) {
+      console.error('Error updating project:', error);
+      toast.error('Failed to update project');
+    } finally {
+      setIsUpdatingProject(false);
+    }
+  };
+
   const handleMeetingApproval = async (meetingId: string, status: 'approved' | 'changes_needed', feedback?: string) => {
     try {
       // Get meeting details before updating
@@ -1815,6 +1893,17 @@ export default function ProjectDetailPage() {
                 <FolderOpen className="w-6 h-6" />
               </Button>
             </div>
+          </div>
+
+          {/* Edit Button - Bottom Right */}
+          <div className="flex justify-end mt-4">
+            <Button
+              variant="outline"
+              onClick={handleOpenEditProject}
+              className="px-4 py-2 text-sm font-medium text-[#d96857] hover:bg-[#d96857] hover:text-white border-[#d96857]/30 transition-all rounded-lg"
+            >
+              Edit
+            </Button>
           </div>
         </div>
 
@@ -2843,6 +2932,95 @@ export default function ProjectDetailPage() {
                 setAddingArea(false);
                 setNewAreaName("");
               }}
+              className="flex-1"
+            >
+              Cancel
+            </Button>
+          </div>
+        </div>
+      </CenterModal>
+
+      {/* Edit Project Modal */}
+      <CenterModal
+        open={editingProject}
+        onClose={() => !isUpdatingProject && setEditingProject(false)}
+        title="Edit Project Details"
+        size="medium"
+      >
+        <div className="p-6 space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-[#2e2e2e] mb-2">
+              Project Name *
+            </label>
+            <Input
+              placeholder="e.g., 3BHK for Mr. Shah"
+              value={editProjectData.name}
+              onChange={(e) => setEditProjectData(prev => ({ ...prev, name: e.target.value }))}
+              className="w-full"
+              autoFocus
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-[#2e2e2e] mb-2">
+              Scope of Work
+            </label>
+            <Input
+              placeholder="e.g., Full Home, Living Room, Kitchen"
+              value={editProjectData.scope}
+              onChange={(e) => setEditProjectData(prev => ({ ...prev, scope: e.target.value }))}
+              className="w-full"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-[#2e2e2e] mb-2">
+              Address
+            </label>
+            <Input
+              placeholder="Full address for delivery"
+              value={editProjectData.address}
+              onChange={(e) => setEditProjectData(prev => ({ ...prev, address: e.target.value }))}
+              className="w-full"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-[#2e2e2e] mb-2">
+              Pincode
+            </label>
+            <Input
+              placeholder="Enter pincode"
+              value={editProjectData.pincode}
+              onChange={(e) => setEditProjectData(prev => ({ ...prev, pincode: e.target.value }))}
+              className="w-full"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-[#2e2e2e] mb-2">
+              Details / Notes
+            </label>
+            <textarea
+              placeholder="Additional notes or requirements"
+              value={editProjectData.notes}
+              onChange={(e) => setEditProjectData(prev => ({ ...prev, notes: e.target.value }))}
+              className="w-full min-h-[100px] px-4 py-3 rounded-xl border border-[#2e2e2e]/20 focus:border-[#d96857] focus:outline-none focus:ring-2 focus:ring-[#d96857]/20 transition-all resize-none"
+            />
+          </div>
+
+          <div className="flex gap-3 pt-2">
+            <Button
+              onClick={handleUpdateProject}
+              disabled={!editProjectData.name.trim() || isUpdatingProject}
+              className="flex-1 bg-[#d96857] text-white hover:bg-[#c85745] disabled:opacity-50"
+            >
+              {isUpdatingProject ? 'Updating...' : 'Update Project'}
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => setEditingProject(false)}
+              disabled={isUpdatingProject}
               className="flex-1"
             >
               Cancel

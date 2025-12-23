@@ -3,6 +3,7 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { useAuth } from '@/lib/auth/authContext';
 import { demoProjects, DemoProject, DemoUpload } from '@/lib/demoData';
+import toast from 'react-hot-toast';
 
 interface ProjectsContextType {
   projects: DemoProject[];
@@ -85,6 +86,14 @@ export function ProjectsProvider({ children }: { children: ReactNode }) {
   const addProject = async (projectData: Omit<DemoProject, 'id' | 'createdAt'>): Promise<DemoProject | null> => {
     if (!user) return null;
     if (isDemo) {
+        // Check for duplicate name in demo mode
+        const duplicateExists = projects.some(
+          p => p.name.toLowerCase().trim() === projectData.name.toLowerCase().trim()
+        );
+        if (duplicateExists) {
+          toast.error('A project with this name already exists. Please choose a different name.');
+          return null;
+        }
       // Demo mode: add locally
       const newProject: DemoProject = {
         ...projectData,
@@ -118,7 +127,14 @@ export function ProjectsProvider({ children }: { children: ReactNode }) {
       });
       if (!res.ok) {
         const err = await res.json();
-        console.error('Failed to create project:', err);
+          console.error('Failed to create project:', err);
+        
+          // Check if it's a duplicate name error
+          if (err.error === 'duplicate_name' || err.message?.includes('already exists')) {
+            toast.error(err.message || 'A project with this name already exists. Please choose a different name.');
+          } else {
+            toast.error('Failed to create project. Please try again.');
+          }
         return null;
       }
       const { project } = await res.json();

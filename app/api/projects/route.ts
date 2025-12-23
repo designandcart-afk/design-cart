@@ -64,6 +64,31 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
     }
 
+      // Check for duplicate project name for this user
+      const projectName = body.project_name?.trim();
+      if (projectName) {
+        try {
+          const { data: existingProjects, error: checkError } = await supabaseAdmin
+            .from('projects')
+            .select('id, project_name')
+            .eq('user_id', user.id)
+            .ilike('project_name', projectName);
+
+          if (checkError) {
+            console.error('Error checking for duplicate project name:', checkError);
+          } else if (existingProjects && existingProjects.length > 0) {
+            console.log('Duplicate project name found:', projectName);
+            return NextResponse.json(
+              { error: 'duplicate_name', message: 'A project with this name already exists. Please choose a different name.' },
+              { status: 400 }
+            );
+          }
+        } catch (duplicateCheckError) {
+          console.error('Unexpected error checking duplicate:', duplicateCheckError);
+          // Continue with creation if duplicate check fails
+        }
+      }
+
     // Add user_id to project data
     const projectDataWithUser = { ...body, user_id: user.id };
 
