@@ -52,7 +52,7 @@ export default function TutorialPage() {
                 <iframe
                   width="100%"
                   height="100%"
-                  src="https://www.youtube.com/embed/dQw4w9WgXcQ"
+                  src="https://www.youtube.com/embed/i8KDc3dGRCo"
                   title="Design&Cart walkthrough"
                   frameBorder="0"
                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
@@ -252,7 +252,7 @@ export default function TutorialPage() {
               <p className="text-sm">After this: Items appear in the Cart grouped by project/room.</p>
             </div>
 
-            <ImageBlock src="/screenshots/add-to-cart.png.png" alt="Add to cart" />
+            <ImageBlock src="/screenshots/add-to-cart.png" alt="Add to cart" />
           </div>
         );
 
