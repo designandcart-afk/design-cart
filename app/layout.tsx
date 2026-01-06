@@ -1,6 +1,7 @@
 // app/layout.tsx
 import "./globals.css";
 import type { Metadata } from "next";
+import Script from "next/script";
 import { Providers } from './providers';
 import Header from "@/components/Header";
 
@@ -25,6 +26,19 @@ export default function RootLayout({
         <link rel="dns-prefetch" href="https://lh3.googleusercontent.com" />
       </head>
       <body className="bg-[#efeee9]">
+        {/* Google Analytics */}
+        <Script
+          src="https://www.googletagmanager.com/gtag/js?id=G-K1TMVXP5PX"
+          strategy="afterInteractive"
+        />
+        <Script id="google-analytics" strategy="afterInteractive">
+          {`
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', 'G-K1TMVXP5PX');
+          `}
+        </Script>
         <Providers>
           <div className="min-h-screen flex flex-col">
             <Header />
