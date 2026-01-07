@@ -57,9 +57,12 @@ class DatabaseService {
   }
 
   // Project operations
-  async createProject(projectData: any): Promise<any> {
-    // Import supabase client
-    const { supabase } = await import('../supabase');
+  async createProject(projectData: any, supabaseClient?: any): Promise<any> {
+    // Use provided authenticated client or fall back to default
+    const supabase = supabaseClient || (await import('../supabase')).supabase;
+    
+    console.log('createProject called with user_id:', projectData.user_id);
+    
     // Generate a random project_code in format #DAC-XXXXXX
     const randomCode = Math.random().toString(36).substr(2, 6).toUpperCase();
     const project_code = projectData.project_code || `#DAC-${randomCode}`;
@@ -67,24 +70,46 @@ class DatabaseService {
     const areas = Array.isArray(projectData.areas)
       ? projectData.areas.filter((a: string) => !!a && a.trim())
       : [];
+    // Validate required fields
+    if (!projectData.user_id) {
+      console.error('Missing user_id in project data:', projectData);
+      throw new Error('user_id is required for creating a project (RLS policy)');
+    }
+    if (!projectData.project_name || !projectData.project_name.trim()) {
+      throw new Error('project_name is required');
+    }
+
     const insertData = {
       project_name: projectData.project_name,
       scope_of_work: projectData.scope_of_work,
       address_full: projectData.address_full,
       pincode: projectData.pincode,
       notes: projectData.notes,
-      user_id: projectData.user_id,
+      user_id: projectData.user_id, // CRITICAL: Required for RLS policy
       project_folder_url: projectData.project_folder_url,
       project_code,
       areas: areas.length ? areas : null,
     };
+
+    console.log('Creating project with data:', {
+      ...insertData,
+      areas_count: areas.length
+    });
+
     // Insert project and get the new project id
     const { data, error } = await supabase
       .from('projects')
       .insert([insertData])
       .select();
+    
     if (error) {
-      throw new Error('Supabase insert error: ' + error.message);
+      console.error('Supabase RLS/Insert error details:', {
+        message: error.message,
+        details: error.details,
+        hint: error.hint,
+        code: error.code
+      });
+      throw new Error(`Supabase insert error: ${error.message} (Code: ${error.code})`);
     }
     const project = data?.[0];
     // Insert each area into project_areas table
@@ -104,8 +129,24 @@ class DatabaseService {
     return project;
   }
 
-  async getProjectsByUserId(userId: string): Promise<Project[]> {
-    return Array.from(this.projects.values()).filter(p => p.userId === userId);
+  async getProjectsByUserId(userId: string, supabaseClient?: any): Promise<any[]> {
+    // Use provided authenticated client or fall back to default
+    const supabase = supabaseClient || (await import('../supabase')).supabase;
+    
+    console.log('getProjectsByUserId called for user:', userId);
+    
+    const { data, error } = await supabase
+      .from('projects')
+      .select('*')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false });
+    
+    if (error) {
+      console.error('Error fetching projects:', error);
+      throw new Error(`Failed to fetch projects: ${error.message}`);
+    }
+    
+    return data || [];
   }
 
   async getProjectById(id: string): Promise<Project | null> {

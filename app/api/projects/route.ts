@@ -30,8 +30,27 @@ async function getCurrentUser(request: NextRequest) {
 
 export async function GET(request: NextRequest) {
   try {
+    const authHeader = request.headers.get('authorization');
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
+    }
+    const accessToken = authHeader.replace('Bearer ', '');
     const user = await getCurrentUser(request);
-    const projects = await databaseService.getProjectsByUserId(user.id);
+    
+    // Create authenticated Supabase client for RLS
+    const supabaseWithAuth = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        global: {
+          headers: {
+            Authorization: `Bearer ${accessToken}`
+          }
+        }
+      }
+    );
+    
+    const projects = await databaseService.getProjectsByUserId(user.id, supabaseWithAuth);
     
     return NextResponse.json({ projects });
   } catch (error) {
@@ -57,18 +76,37 @@ export async function POST(request: NextRequest) {
 
     // Get authenticated user from Supabase
     let user;
+    let accessToken;
     try {
+      const authHeader = request.headers.get('authorization');
+      if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        throw new Error('Not authenticated');
+      }
+      accessToken = authHeader.replace('Bearer ', '');
       user = await getCurrentUser(request);
     } catch (authError) {
       console.error('Auth error:', authError);
       return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
     }
 
+      // Create authenticated Supabase client for RLS
+      const supabaseWithAuth = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+        {
+          global: {
+            headers: {
+              Authorization: `Bearer ${accessToken}`
+            }
+          }
+        }
+      );
+
       // Check for duplicate project name for this user
       const projectName = body.project_name?.trim();
       if (projectName) {
         try {
-          const { data: existingProjects, error: checkError } = await supabaseAdmin
+          const { data: existingProjects, error: checkError } = await supabaseWithAuth
             .from('projects')
             .select('id, project_name')
             .eq('user_id', user.id)
@@ -92,10 +130,10 @@ export async function POST(request: NextRequest) {
     // Add user_id to project data
     const projectDataWithUser = { ...body, user_id: user.id };
 
-    // Pass all received fields to databaseService
+    // Pass all received fields to databaseService with authenticated client
     let project;
     try {
-      project = await databaseService.createProject(projectDataWithUser);
+      project = await databaseService.createProject(projectDataWithUser, supabaseWithAuth);
       console.log('Supabase insert result:', project);
     } catch (dbError) {
       console.error('Supabase insert error:', dbError);
