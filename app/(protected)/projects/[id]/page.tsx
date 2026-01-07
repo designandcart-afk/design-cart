@@ -676,7 +676,7 @@ export default function ProjectDetailPage() {
       const item = items[index];
       if (item?.id) {
         const tableName = type === 'renders' ? 'project_renders' : 'project_screenshots';
-        await supabase
+        const { error } = await supabase
           .from(tableName)
           .update({ 
             status: 'approved',
@@ -684,6 +684,17 @@ export default function ProjectDetailPage() {
             decided_at: new Date().toISOString()
           })
           .eq('id', item.id);
+        
+        if (error) {
+          console.error(`Error approving ${type}:`, {
+            message: error.message,
+            details: error.details,
+            hint: error.hint,
+            code: error.code,
+            table: tableName,
+            item_id: item.id
+          });
+        }
       }
     }
   };
@@ -716,7 +727,7 @@ export default function ProjectDetailPage() {
       const item = items[index];
       if (item?.id) {
         const tableName = type === 'renders' ? 'project_renders' : 'project_screenshots';
-        await supabase
+        const { error } = await supabase
           .from(tableName)
           .update({ 
             status: 'change_requested',
@@ -724,6 +735,17 @@ export default function ProjectDetailPage() {
             decided_at: new Date().toISOString()
           })
           .eq('id', item.id);
+        
+        if (error) {
+          console.error(`Error requesting change for ${type}:`, {
+            message: error.message,
+            details: error.details,
+            hint: error.hint,
+            code: error.code,
+            table: tableName,
+            item_id: item.id
+          });
+        }
       }
     }
 
@@ -1338,7 +1360,12 @@ export default function ProjectDetailPage() {
           ]);
 
         if (areaError) {
-          console.error('Error inserting project area into Supabase:', areaError);
+          console.error('Error inserting project area into Supabase:', {
+            message: areaError.message,
+            details: areaError.details,
+            hint: areaError.hint,
+            code: areaError.code
+          });
         }
       } catch (error) {
         console.error('Error saving area:', error);
@@ -1370,7 +1397,12 @@ export default function ProjectDetailPage() {
           .eq('id', project.id);
 
         if (projectError) {
-          console.error('Error updating project areas:', projectError);
+          console.error('Error updating project areas:', {
+            message: projectError.message,
+            details: projectError.details,
+            hint: projectError.hint,
+            code: projectError.code
+          });
         }
 
         // Delete from project_areas table
@@ -1381,7 +1413,12 @@ export default function ProjectDetailPage() {
           .eq('area_name', areaName);
 
         if (areaError) {
-          console.error('Error deleting project area:', areaError);
+          console.error('Error deleting project area:', {
+            message: areaError.message,
+            details: areaError.details,
+            hint: areaError.hint,
+            code: areaError.code
+          });
         }
       } catch (error) {
         console.error('Error deleting area:', error);

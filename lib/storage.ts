@@ -173,7 +173,13 @@ class Storage {
         .select();
 
       if (error) {
-        console.error('Supabase error saving message:', error);
+        console.error('Supabase error saving message:', {
+          message: error.message,
+          details: error.details,
+          hint: error.hint,
+          code: error.code,
+          project_id: message.projectId
+        });
         throw error;
       }
 

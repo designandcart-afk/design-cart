@@ -31,6 +31,16 @@ export default function Header() {
           .eq('user_id', user.id)
           .single();
         
+        if (error) {
+          console.error('Error fetching designer name:', {
+            message: error.message,
+            details: error.details,
+            hint: error.hint,
+            code: error.code,
+            user_id: user.id
+          });
+        }
+        
         if (!error && data?.name) {
           setDisplayName(data.name);
         } else {

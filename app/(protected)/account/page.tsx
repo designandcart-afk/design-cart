@@ -50,7 +50,13 @@ export default function AccountPage() {
         }, { onConflict: 'user_id' });
       
       if (error) {
-        console.error('Failed to save profile to Supabase:', error);
+        console.error('Failed to save profile to Supabase:', {
+          message: error.message,
+          details: error.details,
+          hint: error.hint,
+          code: error.code,
+          user_id: user.id
+        });
         alert(`Failed to save profile: ${error.message}`);
         return;
       }
