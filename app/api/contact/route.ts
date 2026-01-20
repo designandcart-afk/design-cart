@@ -143,7 +143,7 @@ Received: ${new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })}
     console.error('Contact form error:', error);
     return NextResponse.json(
       { 
-        error: 'Failed to send message. Please try again or email us directly at support@designcart.com' 
+        error: 'Failed to send message. Please try again or email us directly at support@designandcart.in' 
       },
       { status: 500 }
     );

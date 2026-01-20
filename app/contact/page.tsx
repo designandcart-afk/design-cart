@@ -39,7 +39,7 @@ export default function ContactPage() {
       }
     } catch (error) {
       console.error('Contact form error:', error);
-      alert('Failed to send message. Please try emailing us directly at support@designcart.com');
+      alert('Failed to send message. Please try emailing us directly at support@designandcart.in');
     } finally {
       setIsSubmitting(false);
     }
@@ -67,7 +67,7 @@ export default function ContactPage() {
                 <Mail className="w-6 h-6 text-[#d96857]" />
               </div>
               <h3 className="font-semibold text-[#2e2e2e] mb-1">Email</h3>
-              <p className="text-sm text-[#2e2e2e]/60">support@designcart.com</p>
+              <p className="text-sm text-[#2e2e2e]/60">support@designandcart.in</p>
             </div>
 
             <div className="bg-white rounded-xl p-6 border border-[#2e2e2e]/10 text-center">
