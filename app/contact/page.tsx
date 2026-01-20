@@ -1,185 +1,119 @@
 'use client';
 
-import { useState } from 'react';
-import { Mail, MessageSquare, User, Send, CheckCircle } from 'lucide-react';
+import { Mail, Clock, Calendar, ArrowRight, HelpCircle } from 'lucide-react';
+import Link from 'next/link';
 
 export default function ContactPage() {
-  const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    message: ''
-  });
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isSubmitted, setIsSubmitted] = useState(false);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsSubmitting(true);
-
-    try {
-      const response = await fetch('/api/contact', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(formData),
-      });
-
-      const data = await response.json();
-
-      if (response.ok) {
-        setIsSubmitted(true);
-        // Reset form after 5 seconds
-        setTimeout(() => {
-          setIsSubmitted(false);
-          setFormData({ name: '', email: '', message: '' });
-        }, 5000);
-      } else {
-        alert(data.error || 'Failed to send message. Please try again.');
-      }
-    } catch (error) {
-      console.error('Contact form error:', error);
-      alert('Failed to send message. Please try emailing us directly at support@designandcart.in');
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value
-    });
-  };
-
   return (
     <div className="min-h-screen bg-[#efeee9]">
-      <div className="container mx-auto px-4 py-8">
-        <div className="max-w-3xl mx-auto">
-          <div className="mb-8 text-center">
-            <h1 className="text-4xl font-bold text-[#2e2e2e] mb-2">Contact Support</h1>
-            <p className="text-[#2e2e2e]/60">Have questions? We're here to help!</p>
+      <div className="container mx-auto px-4 py-12">
+        <div className="max-w-4xl mx-auto">
+          {/* Header */}
+          <div className="text-center mb-12">
+            <h1 className="text-5xl font-bold text-[#2e2e2e] mb-4">Get in Touch</h1>
+            <p className="text-lg text-[#2e2e2e]/70">We're here to help with any questions you may have</p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-            <div className="bg-white rounded-xl p-6 border border-[#2e2e2e]/10 text-center">
-              <div className="w-12 h-12 rounded-full bg-[#d96857]/10 flex items-center justify-center mx-auto mb-3">
-                <Mail className="w-6 h-6 text-[#d96857]" />
+          {/* Main Contact Card */}
+          <div className="bg-white rounded-2xl shadow-lg border border-[#2e2e2e]/10 overflow-hidden mb-8">
+            <div className="bg-gradient-to-r from-[#d96857] to-[#c45745] p-8 text-white">
+              <div className="flex items-center justify-center mb-4">
+                <div className="w-20 h-20 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center">
+                  <Mail className="w-10 h-10" />
+                </div>
               </div>
-              <h3 className="font-semibold text-[#2e2e2e] mb-1">Email</h3>
-              <p className="text-sm text-[#2e2e2e]/60">support@designandcart.in</p>
+              <h2 className="text-3xl font-bold text-center mb-2">Email Us Directly</h2>
+              <p className="text-center text-white/90">Click the button below to send us an email</p>
             </div>
-
-            <div className="bg-white rounded-xl p-6 border border-[#2e2e2e]/10 text-center">
-              <div className="w-12 h-12 rounded-full bg-[#d96857]/10 flex items-center justify-center mx-auto mb-3">
-                <MessageSquare className="w-6 h-6 text-[#d96857]" />
-              </div>
-              <h3 className="font-semibold text-[#2e2e2e] mb-1">Response Time</h3>
-              <p className="text-sm text-[#2e2e2e]/60">Within 24 hours</p>
-            </div>
-
-            <div className="bg-white rounded-xl p-6 border border-[#2e2e2e]/10 text-center">
-              <div className="w-12 h-12 rounded-full bg-[#d96857]/10 flex items-center justify-center mx-auto mb-3">
-                <User className="w-6 h-6 text-[#d96857]" />
-              </div>
-              <h3 className="font-semibold text-[#2e2e2e] mb-1">Support Hours</h3>
-              <p className="text-sm text-[#2e2e2e]/60">Mon-Sat, 9 AM - 6 PM</p>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-xl shadow-sm border border-[#2e2e2e]/10 p-8">
-            {isSubmitted ? (
-              <div className="text-center py-12">
-                <div className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-4">
-                  <CheckCircle className="w-8 h-8 text-green-600" />
-                </div>
-                <h3 className="text-2xl font-bold text-[#2e2e2e] mb-2">Message Sent!</h3>
-                <p className="text-[#2e2e2e]/60">
-                  Thank you for contacting us. We've sent a confirmation email to your inbox. Our team will get back to you within 24 hours.
-                </p>
-              </div>
-            ) : (
-              <form onSubmit={handleSubmit} className="space-y-6">
-                <div>
-                  <label htmlFor="name" className="block text-sm font-medium text-[#2e2e2e] mb-2">
-                    Your Name
-                  </label>
-                  <input
-                    type="text"
-                    id="name"
-                    name="name"
-                    value={formData.name}
-                    onChange={handleChange}
-                    required
-                    className="w-full px-4 py-3 rounded-lg border border-[#2e2e2e]/10 focus:outline-none focus:ring-2 focus:ring-[#d96857]/20 focus:border-[#d96857] transition-all"
-                    placeholder="Enter your name"
-                  />
-                </div>
-
-                <div>
-                  <label htmlFor="email" className="block text-sm font-medium text-[#2e2e2e] mb-2">
-                    Email Address
-                  </label>
-                  <input
-                    type="email"
-                    id="email"
-                    name="email"
-                    value={formData.email}
-                    onChange={handleChange}
-                    required
-                    className="w-full px-4 py-3 rounded-lg border border-[#2e2e2e]/10 focus:outline-none focus:ring-2 focus:ring-[#d96857]/20 focus:border-[#d96857] transition-all"
-                    placeholder="your@email.com"
-                  />
-                </div>
-
-                <div>
-                  <label htmlFor="message" className="block text-sm font-medium text-[#2e2e2e] mb-2">
-                    Message
-                  </label>
-                  <textarea
-                    id="message"
-                    name="message"
-                    value={formData.message}
-                    onChange={handleChange}
-                    required
-                    rows={6}
-                    className="w-full px-4 py-3 rounded-lg border border-[#2e2e2e]/10 focus:outline-none focus:ring-2 focus:ring-[#d96857]/20 focus:border-[#d96857] transition-all resize-none"
-                    placeholder="How can we help you?"
-                  />
-                </div>
-
-                <button
-                  type="submit"
-                  disabled={isSubmitting}
-                  className="w-full bg-[#d96857] text-white py-3 px-6 rounded-lg font-medium hover:bg-[#c45745] transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+            
+            <div className="p-8">
+              <div className="text-center mb-6">
+                <a 
+                  href="mailto:support@designandcart.in"
+                  className="inline-block text-2xl font-semibold text-[#2e2e2e] hover:text-[#d96857] transition-colors"
                 >
-                  {isSubmitting ? (
-                    <>
-                      <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                      Sending...
-                    </>
-                  ) : (
-                    <>
-                      <Send className="w-5 h-5" />
-                      Send Message
-                    </>
-                  )}
-                </button>
-              </form>
-            )}
+                  support@designandcart.in
+                </a>
+              </div>
+              
+              <a
+                href="mailto:support@designandcart.in"
+                className="w-full bg-[#d96857] text-white py-4 px-8 rounded-xl font-semibold text-lg hover:bg-[#c45745] transition-all duration-200 flex items-center justify-center gap-3 shadow-lg hover:shadow-xl group"
+              >
+                <Mail className="w-6 h-6" />
+                <span>Send Email Now</span>
+                <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+              </a>
+              
+              <p className="text-center text-sm text-[#2e2e2e]/60 mt-4">
+                Your default email client will open with our address pre-filled
+              </p>
+            </div>
           </div>
 
-          <div className="mt-8 bg-blue-50 border border-blue-200 rounded-xl p-6">
-            <h3 className="font-semibold text-blue-900 mb-2">💡 Before You Contact Us</h3>
-            <p className="text-sm text-blue-800 mb-3">
-              Check out our Tutorial page for quick answers to common questions about:
+          {/* Info Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+            <div className="bg-white rounded-xl p-6 border border-[#2e2e2e]/10 shadow-sm">
+              <div className="flex items-start gap-4">
+                <div className="w-12 h-12 rounded-lg bg-[#d96857]/10 flex items-center justify-center flex-shrink-0">
+                  <Clock className="w-6 h-6 text-[#d96857]" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-[#2e2e2e] text-lg mb-2">Response Time</h3>
+                  <p className="text-[#2e2e2e]/70">We typically respond within 24 hours during business days</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white rounded-xl p-6 border border-[#2e2e2e]/10 shadow-sm">
+              <div className="flex items-start gap-4">
+                <div className="w-12 h-12 rounded-lg bg-[#d96857]/10 flex items-center justify-center flex-shrink-0">
+                  <Calendar className="w-6 h-6 text-[#d96857]" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-[#2e2e2e] text-lg mb-2">Support Hours</h3>
+                  <p className="text-[#2e2e2e]/70">Monday - Saturday<br/>9:00 AM - 6:00 PM IST</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* FAQ Section */}
+          <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-200 rounded-2xl p-8 shadow-sm">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-lg bg-blue-500 flex items-center justify-center">
+                <HelpCircle className="w-6 h-6 text-white" />
+              </div>
+              <h3 className="text-2xl font-bold text-blue-900">Need Quick Answers?</h3>
+            </div>
+            <p className="text-blue-800 mb-6">
+              Check out our comprehensive Tutorial page for instant answers to common questions
             </p>
-            <ul className="text-sm text-blue-700 space-y-1 ml-4">
-              <li>• How to create projects and add products</li>
-              <li>• Understanding the approval process</li>
-              <li>• Payment and checkout procedures</li>
-              <li>• Order tracking and delivery status</li>
-            </ul>
+            <div className="space-y-2 mb-6">
+              <div className="flex items-center gap-2 text-blue-700">
+                <div className="w-1.5 h-1.5 rounded-full bg-blue-500"></div>
+                <span>Creating and managing projects</span>
+              </div>
+              <div className="flex items-center gap-2 text-blue-700">
+                <div className="w-1.5 h-1.5 rounded-full bg-blue-500"></div>
+                <span>Product selection and approval process</span>
+              </div>
+              <div className="flex items-center gap-2 text-blue-700">
+                <div className="w-1.5 h-1.5 rounded-full bg-blue-500"></div>
+                <span>Payment and checkout procedures</span>
+              </div>
+              <div className="flex items-center gap-2 text-blue-700">
+                <div className="w-1.5 h-1.5 rounded-full bg-blue-500"></div>
+                <span>Order tracking and delivery information</span>
+              </div>
+            </div>
+            <Link
+              href="/tutorial"
+              className="inline-flex items-center gap-2 bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-700 transition-colors"
+            >
+              View Tutorial
+              <ArrowRight className="w-4 h-4" />
+            </Link>
           </div>
         </div>
       </div>
