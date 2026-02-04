@@ -245,8 +245,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       throw new Error('Password reset is not available in demo mode.');
     }
 
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || window.location.origin;
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/new-password`,
+      redirectTo: `${appUrl}/auth/callback?type=recovery`,
     });
 
     if (error) {
