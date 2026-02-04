@@ -178,6 +178,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     setIsLoading(true);
     try {
+      const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:4000';
       const { data, error } = await supabase.auth.signUp({
         email: email.toLowerCase().trim(),
         password,
@@ -185,7 +186,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           data: {
             full_name: name.trim(),
           },
-          emailRedirectTo: 'http://localhost:4000/verify-email',
+          emailRedirectTo: `${appUrl}/auth/callback`,
         },
       });
 

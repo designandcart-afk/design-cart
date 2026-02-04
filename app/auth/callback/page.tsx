@@ -44,9 +44,35 @@ function AuthCallback() {
               // Redirect to password update page
               setTimeout(() => router.push('/new-password'), 2000);
             } else {
+              // After email verification, ensure designer_details record exists
+              try {
+                const { supabase: supabaseClient } = await import('@/lib/supabase');
+                const { data: profileData, error: profileError } = await supabaseClient
+                  .from('designer_details')
+                  .select('id')
+                  .eq('user_id', data.user.id)
+                  .single();
+                
+                // If no profile exists, create one
+                if (profileError || !profileData) {
+                  const userName = data.user.user_metadata?.full_name || data.user.email?.split('@')[0] || 'Designer';
+                  await supabaseClient
+                    .from('designer_details')
+                    .insert({
+                      user_id: data.user.id,
+                      name: userName,
+                      email: data.user.email,
+                      created_at: new Date().toISOString(),
+                      updated_at: new Date().toISOString(),
+                    });
+                }
+              } catch (profileSetupError) {
+                console.error('Error setting up profile:', profileSetupError);
+              }
+              
               setMessage('Email verified successfully! You can now sign in.');
-              // Redirect to login or dashboard
-              setTimeout(() => router.push('/'), 2000);
+              // Redirect to login
+              setTimeout(() => router.push('/login'), 2000);
             }
           }
         } else {
